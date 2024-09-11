@@ -36,15 +36,17 @@ class BasisExpansion(tf.Module):
     def __init__(self, M):
         self.linear = Linear(M, 1, bias=True)
 
+        stddev = tf.math.sqrt(2 / (M + 1))
+
         ## Trainable mu & sigmas
         self.mu = tf.Variable(
-            rng.normal(shape=[1, M]),
+            rng.normal(shape=[1, M], stddev=stddev),
             trainable=True,
             name="BasisExpansion/mu",
         )
 
         self.sig = tf.Variable(
-            rng.normal(shape=[1, M]),
+            rng.normal(shape=[1, M], stddev=stddev),
             trainable=True,
             name="BasisExpansion/sigma",
         )
@@ -58,9 +60,10 @@ class BasisExpansion(tf.Module):
         return z
 
     ##Returns basis at a given index, for a set of values x
-    def sliver_call(self, index, x):
+    def sliver_call(self, index, x, w_out=False):
         phi = -1 * tf.math.square((x - self.mu[0, index]) / self.sig[0, index])
-        return tf.math.exp(phi)
+        phi = tf.math.exp(phi)
+        return phi if not w_out else self.linear.w[index,0] * phi
 
 
 def grad_update(step_size, variables, grads):
@@ -92,7 +95,7 @@ if __name__ == "__main__":
     rng.reset_from_seed(0x43966E87BD57227011B5B03B58785EC1)
 
     num_samples = config["data"]["num_samples"]
-    M = 10
+    M = 11
 
     #
     x = rng.uniform(shape=(num_samples, 1))
@@ -135,14 +138,14 @@ if __name__ == "__main__":
             )
             bar.refresh()
 
-    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig, (ax1, ax2) = plt.subplots(2, 1)
 
     ax1.plot(x.numpy().squeeze(), y.numpy().squeeze(), "x")
     a = tf.linspace(tf.reduce_min(x), tf.reduce_max(x), 100)[:, tf.newaxis]
-    ax1.plot(a.numpy().squeeze(), basis(a).numpy().squeeze(), linestyle="dashed")
     sinx = tf.linspace(0, 1, 100)
     siny = tf.math.sin(2 * 3.14159 * sinx)
     ax1.plot(sinx.numpy().squeeze(), siny.numpy().squeeze())
+    ax1.plot(a.numpy().squeeze(), basis(a).numpy().squeeze(), linestyle="dashed")
     ax1.set_xlabel("x")
     ax1.set_ylabel("y")
     ax1.set_title("Fig1")
@@ -151,7 +154,7 @@ if __name__ == "__main__":
 
     ax2.set_xlabel("x")
     ax2.set_ylabel("y")
-    ax2.set_title("Fig1")
+    ax2.set_title("Fig2")
     for i in range(0, M):
         ax2.plot(a.numpy().squeeze(), basis.sliver_call(i, a).numpy().squeeze())
 
