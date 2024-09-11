@@ -56,10 +56,10 @@ class BasisExpansion(tf.Module):
         # Multiplies by weights for w
         z = self.linear(phi)
         return z
-    
+
     ##Returns basis at a given index, for a set of values x
-    def sliver_call(self, index,x):
-        phi = -1 * tf.math.square((x - self.mu[0,index]) / self.sig[0,index])
+    def sliver_call(self, index, x):
+        phi = -1 * tf.math.square((x - self.mu[0, index]) / self.sig[0, index])
         return tf.math.exp(phi)
 
 
@@ -135,11 +135,11 @@ if __name__ == "__main__":
             )
             bar.refresh()
 
-    fig, (ax1,ax2) = plt.subplots(1,2)
+    fig, (ax1, ax2) = plt.subplots(1, 2)
 
     ax1.plot(x.numpy().squeeze(), y.numpy().squeeze(), "x")
     a = tf.linspace(tf.reduce_min(x), tf.reduce_max(x), 100)[:, tf.newaxis]
-    ax1.plot(a.numpy().squeeze(), basis(a).numpy().squeeze(),linestyle="dashed")
+    ax1.plot(a.numpy().squeeze(), basis(a).numpy().squeeze(), linestyle="dashed")
     sinx = tf.linspace(0, 1, 100)
     siny = tf.math.sin(2 * 3.14159 * sinx)
     ax1.plot(sinx.numpy().squeeze(), siny.numpy().squeeze())
@@ -152,9 +152,7 @@ if __name__ == "__main__":
     ax2.set_xlabel("x")
     ax2.set_ylabel("y")
     ax2.set_title("Fig1")
-    for i in range(0,M):
-        ax2.plot(a.numpy().squeeze(), basis.sliver_call(i,a).numpy().squeeze())
-
-
+    for i in range(0, M):
+        ax2.plot(a.numpy().squeeze(), basis.sliver_call(i, a).numpy().squeeze())
 
     fig.savefig("plot.pdf")
