@@ -1,3 +1,4 @@
 venv
 Submissions
 *.pdf
+*/__pychache__
