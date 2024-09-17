@@ -1,11 +1,8 @@
 import tensorflow as tf
-import linear
+from linear import Linear
 
 import tensorflow as tf
 
-
-
-    
 
 class MLP(tf.Module):
     def __init__(
@@ -15,30 +12,33 @@ class MLP(tf.Module):
         num_hidden_layers,
         hidden_layer_width,
         hidden_activation=tf.identity,
-        output_activation=tf.identity,):
+        output_activation=tf.identity):
 
+        self.hidden_activation = hidden_activation
+        self.output_activation = output_activation
         # In this project, 1 output (Binary Classifier)
         # num inputs is 2: x coordinate & y coordinate
-        linear_steps = []
+        self.linear_steps = []
         if(num_hidden_layers == 0):
             lin_obj = Linear(num_inputs,num_outputs)
-            linear_steps.append(lin_obj)
+            self.linear_steps.append(lin_obj)
         else:
             obj1 = Linear(num_inputs,hidden_layer_width)
-            linear_steps.append(obj1)
+            self.linear_steps.append(obj1)
             for x in range(0,num_hidden_layers):
                 lin_obj = Linear(hidden_layer_width,hidden_layer_width)
-                linear_steps.append(obj1)
+                self.linear_steps.append(obj1)
             final_obj = Linear(hidden_layer_width,num_outputs)
+            self.linear_steps.append(final_obj)
 
 
     def __call__(self, x):
-        # Perform layered matrix multiplication, add bias at each step, and then return final outputs
-        z = x @ self.w
-        if self.bias:
-            z += self.b
-
-        return z
+        current = x
+        for i in self.linear_steps[:-1]:
+            current = i(current)
+            current = self.hidden_activation(current)
+        current = self.linear_steps[-1](current)
+        return  self.output_activation(current)
 
 
 def random_spiral_gen(datapoints, dev, initial, final):
@@ -69,9 +69,21 @@ if __name__ == "__main__":
     red_thetas, red_points = random_spiral_gen(
         NUM_DATAPOINTS, THETA_DEV, THETA_INIT, THETA_FINAL
     )
-
     red_x = np.cos(red_thetas) * red_points
     red_y = -1 * np.sin(red_thetas) * red_points
+
+    expected_value = np.full(blue_x.shape, -1)
+    combined_blue = np.vstack((blue_x,blue_y,expected_value)).T
+
+    expected_value.fill(1)
+    combined_red = np.vstack((red_x,red_y,expected_value)).T
+
+    #Combines the data and then shuffles it together
+    dataset = (np.concatenate((combined_red,combined_blue)))
+    rng.shuffle(dataset)
+    print(dataset[0:10,:])
+
+
 
     fig, (ax1) = plt.subplots(1, 1)
     ax1.plot(blue_x, blue_y, "bo")
