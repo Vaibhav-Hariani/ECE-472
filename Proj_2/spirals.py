@@ -1,7 +1,11 @@
 import tensorflow as tf
+import linear
 
-# # The perceptron breaking inputs into one of two spirals.
+import tensorflow as tf
 
+
+
+    
 
 class MLP(tf.Module):
     def __init__(
@@ -11,11 +15,22 @@ class MLP(tf.Module):
         num_hidden_layers,
         hidden_layer_width,
         hidden_activation=tf.identity,
-        output_activation=tf.identity,
-    ):
-        # In this project, 2 outputs (Binary Classifier)
+        output_activation=tf.identity,):
+
+        # In this project, 1 output (Binary Classifier)
         # num inputs is 2: x coordinate & y coordinate
-        rng = tf.random.get_global_generator()
+        linear_steps = []
+        if(num_hidden_layers == 0):
+            lin_obj = Linear(num_inputs,num_outputs)
+            linear_steps.append(lin_obj)
+        else:
+            obj1 = Linear(num_inputs,hidden_layer_width)
+            linear_steps.append(obj1)
+            for x in range(0,num_hidden_layers):
+                lin_obj = Linear(hidden_layer_width,hidden_layer_width)
+                linear_steps.append(obj1)
+            final_obj = Linear(hidden_layer_width,num_outputs)
+
 
     def __call__(self, x):
         # Perform layered matrix multiplication, add bias at each step, and then return final outputs
