@@ -63,7 +63,7 @@ class BasisExpansion(tf.Module):
     def sliver_call(self, index, x, w_out=False):
         phi = -1 * tf.math.square((x - self.mu[0, index]) / self.sig[0, index])
         phi = tf.math.exp(phi)
-        return phi if not w_out else self.linear.w[index,0] * phi
+        return phi if not w_out else self.linear.w[index, 0] * phi
 
 
 def grad_update(step_size, variables, grads):
