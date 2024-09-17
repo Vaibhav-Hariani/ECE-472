@@ -1,8 +1,6 @@
 import tensorflow as tf
 from linear import Linear
 
-import tensorflow as tf
-
 
 class MLP(tf.Module):
     def __init__(
@@ -12,25 +10,25 @@ class MLP(tf.Module):
         num_hidden_layers,
         hidden_layer_width,
         hidden_activation=tf.identity,
-        output_activation=tf.identity):
+        output_activation=tf.identity,
+    ):
 
         self.hidden_activation = hidden_activation
         self.output_activation = output_activation
         # In this project, 1 output (Binary Classifier)
         # num inputs is 2: x coordinate & y coordinate
         self.linear_steps = []
-        if(num_hidden_layers == 0):
-            lin_obj = Linear(num_inputs,num_outputs)
+        if num_hidden_layers == 0:
+            lin_obj = Linear(num_inputs, num_outputs)
             self.linear_steps.append(lin_obj)
         else:
-            obj1 = Linear(num_inputs,hidden_layer_width)
+            obj1 = Linear(num_inputs, hidden_layer_width)
             self.linear_steps.append(obj1)
-            for x in range(0,num_hidden_layers):
-                lin_obj = Linear(hidden_layer_width,hidden_layer_width)
+            for x in range(0, num_hidden_layers):
+                lin_obj = Linear(hidden_layer_width, hidden_layer_width)
                 self.linear_steps.append(obj1)
-            final_obj = Linear(hidden_layer_width,num_outputs)
+            final_obj = Linear(hidden_layer_width, num_outputs)
             self.linear_steps.append(final_obj)
-
 
     def __call__(self, x):
         current = x
@@ -38,7 +36,7 @@ class MLP(tf.Module):
             current = i(current)
             current = self.hidden_activation(current)
         current = self.linear_steps[-1](current)
-        return  self.output_activation(current)
+        return self.output_activation(current)
 
 
 def random_spiral_gen(datapoints, dev, initial, final):
@@ -49,11 +47,17 @@ def random_spiral_gen(datapoints, dev, initial, final):
     return (rng.normal(loc=de_lin, scale=dev), de_lin)
 
 
+def grad_update(step_size, variables, grads):
+    for var, grad in zip(variables, grads):
+        var.assign_sub(step_size * grad)
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from tqdm import trange
     import numpy as np
 
+    # Constants for data (not using a config.yaml this time)
     NUM_LOOPS = 5.35
     NUM_DATAPOINTS = 200
     THETA_DEV = 0.3
@@ -72,18 +76,52 @@ if __name__ == "__main__":
     red_x = np.cos(red_thetas) * red_points
     red_y = -1 * np.sin(red_thetas) * red_points
 
-    expected_value = np.full(blue_x.shape, -1)
-    combined_blue = np.vstack((blue_x,blue_y,expected_value)).T
+    expected_value = np.full(blue_x.shape, 0)
+    combined_blue = np.vstack((blue_x, blue_y, expected_value)).T
 
     expected_value.fill(1)
-    combined_red = np.vstack((red_x,red_y,expected_value)).T
+    combined_red = np.vstack((red_x, red_y, expected_value)).T
 
-    #Combines the data and then shuffles it together
-    dataset = (np.concatenate((combined_red,combined_blue)))
-    rng.shuffle(dataset)
-    print(dataset[0:10,:])
+    # Combines the data
+    dataset = np.concatenate((combined_red, combined_blue))
+    #    rng.shuffle(dataset)
+    ##Model parameters
+    step_size = 0.05
+    batch_size = 10
+    num_iters = 500
+    decay_rate = 0.999
 
-
+    model = MLP(
+        num_inputs=2,
+        num_outputs=1,
+        num_hidden_layers=128,
+        hidden_layer_width=128,
+        hidden_activation=tf.nn.relu,
+    )
+    bar = trange(10)
+    for i in bar:
+        batch_indices = rng.integers(low=0, high=dataset.shape[0], size=batch_size).T
+        with tf.GradientTape() as tape:
+            slice = np.take(dataset, batch_indices, axis=0)
+            x_batch = slice[:, 0]
+            y_batch = slice[:, 1]
+            expected = slice[:, 2]
+            # print(x_batch)
+            # print(y_batch)
+            # print(expected)
+            calculated = model(x_batch, y_batch)
+            loss = tf.math.reduce_mean(
+                -1* (calculated * tf.math.log(expected)
+                + (1 - calculated) * tf.math.log(1 - expected)
+            ))
+        grads = tape.gradient(loss, MLP.trainable_variables)
+        grad_update(step_size,MLP.trainable_variables,grads)
+        step_size *= decay_rate
+        if i % 10 == (10 - 1):
+            bar.set_description(
+                f"Step {i}; Loss => {loss.numpy():0.4f}, step_size => {step_size:0.4f}"
+            )
+            bar.refresh()
 
     fig, (ax1) = plt.subplots(1, 1)
     ax1.plot(blue_x, blue_y, "bo")
@@ -95,4 +133,4 @@ if __name__ == "__main__":
     h = ax1.set_ylabel("y", labelpad=10)
     h.set_rotation(0)
 
-    fig.savefig("plot.pdf")
+    fig.savefig("Submissions/plot.pdf")

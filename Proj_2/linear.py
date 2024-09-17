@@ -1,4 +1,6 @@
 import tensorflow as tf
+
+
 class Linear(tf.Module):
     def __init__(self, num_inputs, num_outputs, bias=True):
         rng = tf.random.get_global_generator()
@@ -18,12 +20,12 @@ class Linear(tf.Module):
                 tf.zeros(shape=[1, num_outputs]),
                 trainable=True,
                 name="Linear/b",
-            )            
+            )
+
     def __call__(self, x):
-            z = x @ self.w
+        z = x @ self.w
 
-            if self.bias:
-                z += self.b
+        if self.bias:
+            z += self.b
 
-            return z
-
+        return z
