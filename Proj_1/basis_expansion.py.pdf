@@ -1,0 +1,828 @@
+%!PS-Adobe-3.0
+%%Title: basis_expansion.py
+%%For: vaibh
+%%Creator: VIM - Vi IMproved 8.2 (2019 Dec 12)
+%%CreationDate: Thu Sep 12 12:09:21 2024
+%%DocumentData: Clean8Bit
+%%Orientation: Portrait
+%%Pages: (atend)
+%%PageOrder: Ascend
+%%BoundingBox: 61 42 577 752
+%%DocumentMedia: letter 612 792 0 () ()
+%%DocumentNeededResources: font Courier
+%%+ font Courier-Bold
+%%+ font Courier-Oblique
+%%+ font Courier-BoldOblique
+%%DocumentSuppliedResources: procset VIM-Prolog 1.4 1
+%%+ encoding VIM-latin1 1.0 0
+%%Requirements: duplex collate color
+%%EndComments
+%%BeginDefaults
+%%PageResources: font Courier
+%%+ font Courier-Bold
+%%+ font Courier-Oblique
+%%+ font Courier-BoldOblique
+%%PageMedia: letter
+%%EndDefaults
+%%BeginProlog
+%%BeginResource: procset VIM-Prolog
+%%BeginDocument: /usr/share/vim/vim82/print/prolog.ps
+%!PS-Adobe-3.0 Resource-ProcSet
+%%Title: VIM-Prolog
+%%Version: 1.4 1
+%%EndComments
+% Editing of this file is NOT RECOMMENDED.  You run a very good risk of causing
+% all PostScript printing from VIM failing if you do.  PostScript is not called
+% a write-only language for nothing!
+/packedarray where not{userdict begin/setpacking/pop load def/currentpacking
+false def end}{pop}ifelse/CP currentpacking def true setpacking
+/bd{bind def}bind def/ld{load def}bd/ed{exch def}bd/d/def ld
+/db{dict begin}bd/cde{currentdict end}bd
+/T true d/F false d
+/SO null d/sv{/SO save d}bd/re{SO restore}bd
+/L2 systemdict/languagelevel 2 copy known{get exec}{pop pop 1}ifelse 2 ge d
+/m/moveto ld/s/show ld /ms{m s}bd /g/setgray ld/r/setrgbcolor ld/sp{showpage}bd
+/gs/gsave ld/gr/grestore ld/cp/currentpoint ld
+/ul{gs UW setlinewidth cp UO add 2 copy newpath m 3 1 roll add exch lineto
+stroke gr}bd
+/bg{gs r cp BO add 4 -2 roll rectfill gr}bd
+/sl{90 rotate 0 exch translate}bd
+L2{
+/sspd{mark exch{setpagedevice}stopped cleartomark}bd
+/nc{1 db/NumCopies ed cde sspd}bd
+/sps{3 db/Orientation ed[3 1 roll]/PageSize ed/ImagingBBox null d cde sspd}bd
+/dt{2 db/Tumble ed/Duplex ed cde sspd}bd
+/c{1 db/Collate ed cde sspd}bd
+}{
+/nc{/#copies ed}bd
+/sps{statusdict/setpage get exec}bd
+/dt{statusdict/settumble 2 copy known{get exec}{pop pop pop}ifelse
+statusdict/setduplexmode 2 copy known{get exec}{pop pop pop}ifelse}bd
+/c{pop}bd
+}ifelse
+/ffs{findfont exch scalefont d}bd/sf{setfont}bd
+/ref{1 db findfont dup maxlength dict/NFD ed{exch dup/FID ne{exch NFD 3 1 roll
+put}{pop pop}ifelse}forall/Encoding findresource dup length 256 eq{NFD/Encoding
+3 -1 roll put}{pop}ifelse NFD dup/FontType get 3 ne{/CharStrings}{/CharProcs}
+ifelse 2 copy known{2 copy get dup maxlength dict copy[/questiondown/space]{2
+copy known{2 copy get 2 index/.notdef 3 -1 roll put pop exit}if pop}forall put
+}{pop pop}ifelse dup NFD/FontName 3 -1 roll put NFD definefont pop end}bd
+CP setpacking
+(\004)cvn{}bd
+% vim:ff=unix:
+%%EOF
+%%EndDocument
+%%EndResource
+%%BeginResource: encoding VIM-latin1
+%%BeginDocument: /usr/share/vim/vim82/print/latin1.ps
+%!PS-Adobe-3.0 Resource-Encoding
+%%Title: VIM-latin1
+%%Version: 1.0 0
+%%EndComments
+/VIM-latin1[
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/space /exclam /quotedbl /numbersign /dollar /percent /ampersand /quotesingle
+/parenleft /parenright /asterisk /plus /comma /minus /period /slash
+/zero /one /two /three /four /five /six /seven
+/eight /nine /colon /semicolon /less /equal /greater /question
+/at /A /B /C /D /E /F /G
+/H /I /J /K /L /M /N /O
+/P /Q /R /S /T /U /V /W
+/X /Y /Z /bracketleft /backslash /bracketright /asciicircum /underscore
+/grave /a /b /c /d /e /f /g
+/h /i /j /k /l /m /n /o
+/p /q /r /s /t /u /v /w
+/x /y /z /braceleft /bar /braceright /asciitilde /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/space /exclamdown /cent /sterling /currency /yen /brokenbar /section
+/dieresis /copyright /ordfeminine /guillemotleft /logicalnot /hyphen /registered /macron
+/degree /plusminus /twosuperior /threesuperior /acute /mu /paragraph /periodcentered
+/cedilla /onesuperior /ordmasculine /guillemotright /onequarter /onehalf /threequarters /questiondown
+/Agrave /Aacute /Acircumflex /Atilde /Adieresis /Aring /AE /Ccedilla
+/Egrave /Eacute /Ecircumflex /Edieresis /Igrave /Iacute /Icircumflex /Idieresis
+/Eth /Ntilde /Ograve /Oacute /Ocircumflex /Otilde /Odieresis /multiply
+/Oslash /Ugrave /Uacute /Ucircumflex /Udieresis /Yacute /Thorn /germandbls
+/agrave /aacute /acircumflex /atilde /adieresis /aring /ae /ccedilla
+/egrave /eacute /ecircumflex /edieresis /igrave /iacute /icircumflex /idieresis
+/eth /ntilde /ograve /oacute /ocircumflex /otilde /odieresis /divide
+/oslash /ugrave /uacute /ucircumflex /udieresis /yacute /thorn /ydieresis]
+/Encoding defineresource pop
+% vim:ff=unix:
+%%EOF
+%%EndDocument
+%%EndResource
+%%EndProlog
+%%BeginSetup
+612 792 0 sps
+1 nc
+T F dt
+T c
+%%IncludeResource: font Courier
+/_F0 /VIM-latin1 /Courier ref
+/F0 10 /_F0 ffs
+%%IncludeResource: font Courier-Bold
+/_F1 /VIM-latin1 /Courier-Bold ref
+/F1 10 /_F1 ffs
+%%IncludeResource: font Courier-Oblique
+/_F2 /VIM-latin1 /Courier-Oblique ref
+/F2 10 /_F2 ffs
+%%IncludeResource: font Courier-BoldOblique
+/_F3 /VIM-latin1 /Courier-BoldOblique ref
+/F3 10 /_F3 ffs
+/UO -1 d
+/UW 0.5 d
+/BO -2.5 d
+%%EndSetup
+%%Page: 1 1
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(basis_expansion.py                                                              Page 1)61.2 744.9 ms
+F0 sf
+0 0 0.376 r
+(import)61.2 724.9 ms
+0 g
+( tensorflow )s
+0 0.498 0.498 r
+(as)s
+0 g
+( tf)s
+0 0.498 0.498 r
+(class)61.2 694.9 ms
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(Linear)s
+F0 sf
+0 g
+(\(tf.Module\):)s
+(    )61.2 684.9 ms
+0 0.498 0.498 r
+(def)s
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(__init__)s
+F0 sf
+0 g
+(\(self, num_inputs, num_outputs, bias=)s
+F1 sf
+0.498 0.498 0 r
+(True)s
+F0 sf
+0 g
+(\):)s
+(        rng = tf.random.get_global_generator\(\))61.2 674.9 ms
+(        stddev = tf.math.sqrt\()61.2 654.9 ms
+0.498 0.125 0.498 r
+(2)s
+0 g
+( / \(num_inputs + num_outputs\)\))s
+(        self.w = tf.Variable\()61.2 634.9 ms
+(            rng.normal\(shape=[num_inputs, num_outputs], stddev=stddev\),)61.2 624.9 ms
+(            trainable=)61.2 614.9 ms
+F1 sf
+0.498 0.498 0 r
+(True)s
+F0 sf
+0 g
+(,)s
+(            name=)61.2 604.9 ms
+0.498 0.125 0.498 r
+("Linear/w")s
+0 g
+(,)s
+(        \))61.2 594.9 ms
+(        )61.2 574.9 ms
+0.498 0.498 0 r
+(# Does not make sense looking at the data, but leaving it in)s
+0 g
+(        self.bias = bias)61.2 564.9 ms
+(        )61.2 554.9 ms
+0 0.498 0.498 r
+(if)s
+0 g
+( self.bias:)s
+(            self.b = tf.Variable\()61.2 544.9 ms
+(                tf.zeros\(shape=[)61.2 534.9 ms
+0.498 0.125 0.498 r
+(1)s
+0 g
+(, num_outputs]\),)s
+(                trainable=)61.2 524.9 ms
+F1 sf
+0.498 0.498 0 r
+(True)s
+F0 sf
+0 g
+(,)s
+(                name=)61.2 514.9 ms
+0.498 0.125 0.498 r
+("Linear/b")s
+0 g
+(,)s
+(            \))61.2 504.9 ms
+(    )61.2 484.9 ms
+0 0.498 0.498 r
+(def)s
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(__call__)s
+F0 sf
+0 g
+(\(self, x\):)s
+(        z = x @ self.w)61.2 474.9 ms
+(        )61.2 454.9 ms
+0 0.498 0.498 r
+(if)s
+0 g
+( self.bias:)s
+(            z += self.b)61.2 444.9 ms
+(        )61.2 424.9 ms
+0 0.498 0.498 r
+(return)s
+0 g
+( z)s
+0 0.498 0.498 r
+(class)61.2 394.9 ms
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(BasisExpansion)s
+F0 sf
+0 g
+(\(tf.Module\):)s
+(    )61.2 374.9 ms
+0 0.498 0.498 r
+(def)s
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(__init__)s
+F0 sf
+0 g
+(\(self, M\):)s
+(        self.linear = Linear\(M, )61.2 364.9 ms
+0.498 0.125 0.498 r
+(1)s
+0 g
+(, bias=)s
+F1 sf
+0.498 0.498 0 r
+(True)s
+F0 sf
+0 g
+(\))s
+(        stddev = tf.math.sqrt\()61.2 344.9 ms
+0.498 0.125 0.498 r
+(2)s
+0 g
+( / \(M + )s
+0.498 0.125 0.498 r
+(1)s
+0 g
+(\)\))s
+(        )61.2 324.9 ms
+0.498 0.498 0 r
+(## Trainable mu & sigmas)s
+0 g
+(        self.mu = tf.Variable\()61.2 314.9 ms
+(            rng.normal\(shape=[)61.2 304.9 ms
+0.498 0.125 0.498 r
+(1)s
+0 g
+(, M], stddev=stddev\),)s
+(            trainable=)61.2 294.9 ms
+F1 sf
+0.498 0.498 0 r
+(True)s
+F0 sf
+0 g
+(,)s
+(            name=)61.2 284.9 ms
+0.498 0.125 0.498 r
+("BasisExpansion/mu")s
+0 g
+(,)s
+(        \))61.2 274.9 ms
+(        self.sig = tf.Variable\()61.2 254.9 ms
+(            rng.normal\(shape=[)61.2 244.9 ms
+0.498 0.125 0.498 r
+(1)s
+0 g
+(, M], stddev=stddev\),)s
+(            trainable=)61.2 234.9 ms
+F1 sf
+0.498 0.498 0 r
+(True)s
+F0 sf
+0 g
+(,)s
+(            name=)61.2 224.9 ms
+0.498 0.125 0.498 r
+("BasisExpansion/sigma")s
+0 g
+(,)s
+(        \))61.2 214.9 ms
+(    )61.2 194.9 ms
+0 0.498 0.498 r
+(def)s
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(__call__)s
+F0 sf
+0 g
+(\(self, x\):)s
+(        )61.2 184.9 ms
+0.498 0.498 0 r
+(## This computes the PHI function)s
+0 g
+(        phi = -)61.2 174.9 ms
+0.498 0.125 0.498 r
+(1)s
+0 g
+( * tf.math.square\(\(x - self.mu\) / self.sig\))s
+(        phi = tf.math.exp\(phi\))61.2 164.9 ms
+(        )61.2 154.9 ms
+0.498 0.498 0 r
+(# Multiplies by weights for w)s
+0 g
+(        z = self.linear\(phi\))61.2 144.9 ms
+(        )61.2 134.9 ms
+0 0.498 0.498 r
+(return)s
+0 g
+( z)s
+(    )61.2 114.9 ms
+0.498 0.498 0 r
+(##Returns basis at a given index, for a set of values x)s
+0 g
+(    )61.2 104.9 ms
+0 0.498 0.498 r
+(def)s
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(sliver_call)s
+F0 sf
+0 g
+(\(self, index, x, w_out=)s
+F1 sf
+0.498 0.498 0 r
+(False)s
+F0 sf
+0 g
+(\):)s
+(        phi = -)61.2 94.9 ms
+0.498 0.125 0.498 r
+(1)s
+0 g
+( * tf.math.square\(\(x - self.mu[)s
+0.498 0.125 0.498 r
+(0)s
+0 g
+(, index]\) / self.sig[)s
+0.498 0.125 0.498 r
+(0)s
+0 g
+(, index]\))s
+(        phi = tf.math.exp\(phi\))61.2 84.9 ms
+(        )61.2 74.9 ms
+0 0.498 0.498 r
+(return)s
+0 g
+( phi )s
+0 0.498 0.498 r
+(if)s
+0 g
+( )s
+0 0.498 0.498 r
+(not)s
+0 g
+( w_out )s
+0 0.498 0.498 r
+(else)s
+0 g
+( self.linear.w[index, )s
+0.498 0.125 0.498 r
+(0)s
+0 g
+(] * phi)s
+0 0.498 0.498 r
+(def)61.2 44.9 ms
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(grad_update)s
+F0 sf
+0 g
+(\(step_size, variables, grads\):)s
+re sp
+%%PageTrailer
+%%Page: 2 2
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(basis_expansion.py                                                              Page 2)61.2 744.9 ms
+F0 sf
+(    )61.2 724.9 ms
+0 0.498 0.498 r
+(for)s
+0 g
+( var, grad )s
+0 0.498 0.498 r
+(in)s
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(zip)s
+F0 sf
+0 g
+(\(variables, grads\):)s
+(        var.assign_sub\(step_size * grad\))61.2 714.9 ms
+0 0.498 0.498 r
+(if)61.2 684.9 ms
+0 g
+( __name__ == )s
+0.498 0.125 0.498 r
+("__main__")s
+0 g
+(:)s
+(    )61.2 674.9 ms
+0 0 0.376 r
+(import)s
+0 g
+( argparse)s
+(    )61.2 654.9 ms
+0 0 0.376 r
+(from)s
+0 g
+( pathlib )s
+0 0 0.376 r
+(import)s
+0 g
+( Path)s
+(    )61.2 634.9 ms
+0 0 0.376 r
+(import)s
+0 g
+( matplotlib.pyplot )s
+0 0.498 0.498 r
+(as)s
+0 g
+( plt)s
+(    )61.2 624.9 ms
+0 0 0.376 r
+(import)s
+0 g
+( yaml)s
+(    )61.2 604.9 ms
+0 0 0.376 r
+(from)s
+0 g
+( tqdm )s
+0 0 0.376 r
+(import)s
+0 g
+( trange)s
+(    parser = argparse.ArgumentParser\()61.2 584.9 ms
+(        prog=)61.2 574.9 ms
+0.498 0.125 0.498 r
+("Linear")s
+0 g
+(,)s
+(        description=)61.2 564.9 ms
+0.498 0.125 0.498 r
+("Fits a linear model to some data, given a config")s
+0 g
+(,)s
+(    \))61.2 554.9 ms
+(    parser.add_argument\()61.2 534.9 ms
+0.498 0.125 0.498 r
+("-c")s
+0 g
+(, )s
+0.498 0.125 0.498 r
+("--config")s
+0 g
+(, )s
+F1 sf
+0.498 0.498 0 r
+(type)s
+F0 sf
+0 g
+(=Path, default=Path\()s
+0.498 0.125 0.498 r
+("config.yaml")s
+0 g
+(\)\))s
+(    args = parser.parse_args\(\))61.2 524.9 ms
+(    config = yaml.safe_load\(args.config.read_text\(\)\))61.2 504.9 ms
+(    rng = tf.random.get_global_generator\(\))61.2 484.9 ms
+(    rng.reset_from_seed\()61.2 474.9 ms
+0.498 0.125 0.498 r
+(0x43966E87BD57227011B5B03B58785EC1)s
+0 g
+(\))s
+(    num_samples = config[)61.2 454.9 ms
+0.498 0.125 0.498 r
+("data")s
+0 g
+(][)s
+0.498 0.125 0.498 r
+("num_samples")s
+0 g
+(])s
+(    M = )61.2 444.9 ms
+0.498 0.125 0.498 r
+(11)s
+0 g
+(    )61.2 424.9 ms
+0.498 0.498 0 r
+(#)s
+0 g
+(    x = rng.uniform\(shape=\(num_samples, )61.2 414.9 ms
+0.498 0.125 0.498 r
+(1)s
+0 g
+(\)\))s
+(    y = rng.normal\()61.2 394.9 ms
+(        shape=\(num_samples, )61.2 384.9 ms
+0.498 0.125 0.498 r
+(1)s
+0 g
+(\),)s
+(        mean=tf.sin\()61.2 374.9 ms
+0.498 0.125 0.498 r
+(2)s
+0 g
+( * )s
+0.498 0.125 0.498 r
+(3.14159)s
+0 g
+( * x\),)s
+(        stddev=config[)61.2 364.9 ms
+0.498 0.125 0.498 r
+("data")s
+0 g
+(][)s
+0.498 0.125 0.498 r
+("noise_stddev")s
+0 g
+(],)s
+(    \))61.2 354.9 ms
+(    basis = BasisExpansion\(M\))61.2 334.9 ms
+(    num_iters = config[)61.2 314.9 ms
+0.498 0.125 0.498 r
+("learning")s
+0 g
+(][)s
+0.498 0.125 0.498 r
+("num_iters")s
+0 g
+(])s
+(    step_size = config[)61.2 304.9 ms
+0.498 0.125 0.498 r
+("learning")s
+0 g
+(][)s
+0.498 0.125 0.498 r
+("step_size")s
+0 g
+(])s
+(    decay_rate = config[)61.2 294.9 ms
+0.498 0.125 0.498 r
+("learning")s
+0 g
+(][)s
+0.498 0.125 0.498 r
+("decay_rate")s
+0 g
+(])s
+(    batch_size = config[)61.2 284.9 ms
+0.498 0.125 0.498 r
+("learning")s
+0 g
+(][)s
+0.498 0.125 0.498 r
+("batch_size")s
+0 g
+(])s
+(    refresh_rate = config[)61.2 274.9 ms
+0.498 0.125 0.498 r
+("display")s
+0 g
+(][)s
+0.498 0.125 0.498 r
+("refresh_rate")s
+0 g
+(])s
+(    bar = trange\(num_iters\))61.2 254.9 ms
+(    )61.2 234.9 ms
+0 0.498 0.498 r
+(for)s
+0 g
+( i )s
+0 0.498 0.498 r
+(in)s
+0 g
+( bar:)s
+(        batch_indices = rng.uniform\()61.2 224.9 ms
+(            shape=[batch_size], maxval=num_samples, dtype=tf.int32)61.2 214.9 ms
+(        \))61.2 204.9 ms
+(        )61.2 194.9 ms
+0 0.498 0.498 r
+(with)s
+0 g
+( tf.GradientTape\(\) )s
+0 0.498 0.498 r
+(as)s
+0 g
+( tape:)s
+(            x_batch = tf.gather\(x, batch_indices\))61.2 184.9 ms
+(            y_batch = tf.gather\(y, batch_indices\))61.2 174.9 ms
+(            y_hat = basis\(x_batch\))61.2 154.9 ms
+(            loss = tf.math.reduce_mean\(\(y_batch - y_hat\) ** )61.2 144.9 ms
+0.498 0.125 0.498 r
+(2)s
+0 g
+( / )s
+0.498 0.125 0.498 r
+(2)s
+0 g
+(\))s
+(        grads = tape.gradient\(loss, basis.trainable_variables\))61.2 124.9 ms
+(        grad_update\(step_size, basis.trainable_variables, grads\))61.2 114.9 ms
+(        step_size *= decay_rate)61.2 94.9 ms
+(        )61.2 74.9 ms
+0 0.498 0.498 r
+(if)s
+0 g
+( i % refresh_rate == \(refresh_rate - )s
+0.498 0.125 0.498 r
+(1)s
+0 g
+(\):)s
+(            bar.set_description\()61.2 64.9 ms
+(                f)61.2 54.9 ms
+0.498 0.125 0.498 r
+("Step {i}; Loss => {loss.numpy\(\):0.4f}, step_size => {step_size:0.4f})s
+(")61.2 44.9 ms
+re sp
+%%PageTrailer
+%%Page: 3 3
+%%BeginPageSetup
+sv
+0 g
+F0 sf
+%%EndPageSetup
+F1 sf
+(basis_expansion.py                                                              Page 3)61.2 744.9 ms
+F0 sf
+(            \))61.2 724.9 ms
+(            bar.refresh\(\))61.2 714.9 ms
+(    fig, \(ax1, ax2\) = plt.subplots\()61.2 694.9 ms
+0.498 0.125 0.498 r
+(2)s
+0 g
+(, )s
+0.498 0.125 0.498 r
+(1)s
+0 g
+(\))s
+(    ax1.plot\(x.numpy\(\).squeeze\(\), y.numpy\(\).squeeze\(\), )61.2 674.9 ms
+0.498 0.125 0.498 r
+("x")s
+0 g
+(\))s
+(    a = tf.linspace\(tf.reduce_min\(x\), tf.reduce_max\(x\), )61.2 664.9 ms
+0.498 0.125 0.498 r
+(100)s
+0 g
+(\)[:, tf.newaxis])s
+(    sinx = tf.linspace\()61.2 654.9 ms
+0.498 0.125 0.498 r
+(0)s
+0 g
+(, )s
+0.498 0.125 0.498 r
+(1)s
+0 g
+(, )s
+0.498 0.125 0.498 r
+(100)s
+0 g
+(\))s
+(    siny = tf.math.sin\()61.2 644.9 ms
+0.498 0.125 0.498 r
+(2)s
+0 g
+( * )s
+0.498 0.125 0.498 r
+(3.14159)s
+0 g
+( * sinx\))s
+(    ax1.plot\(sinx.numpy\(\).squeeze\(\), siny.numpy\(\).squeeze\(\)\))61.2 634.9 ms
+(    ax1.plot\(a.numpy\(\).squeeze\(\), basis\(a\).numpy\(\).squeeze\(\), linestyle=)61.2 624.9 ms
+0.498 0.125 0.498 r
+("dashed")s
+0 g
+(\))s
+(    ax1.set_xlabel\()61.2 614.9 ms
+0.498 0.125 0.498 r
+("x")s
+0 g
+(\))s
+(    ax1.set_ylabel\()61.2 604.9 ms
+0.498 0.125 0.498 r
+("y")s
+0 g
+(\))s
+(    ax1.set_title\()61.2 594.9 ms
+0.498 0.125 0.498 r
+("Fig1")s
+0 g
+(\))s
+(    h = ax1.set_ylabel\()61.2 584.9 ms
+0.498 0.125 0.498 r
+("y")s
+0 g
+(, labelpad=)s
+0.498 0.125 0.498 r
+(10)s
+0 g
+(\))s
+(    h.set_rotation\()61.2 574.9 ms
+0.498 0.125 0.498 r
+(0)s
+0 g
+(\))s
+(    ax2.set_xlabel\()61.2 554.9 ms
+0.498 0.125 0.498 r
+("x")s
+0 g
+(\))s
+(    ax2.set_ylabel\()61.2 544.9 ms
+0.498 0.125 0.498 r
+("y")s
+0 g
+(\))s
+(    ax2.set_title\()61.2 534.9 ms
+0.498 0.125 0.498 r
+("Fig2")s
+0 g
+(\))s
+(    )61.2 524.9 ms
+0 0.498 0.498 r
+(for)s
+0 g
+( i )s
+0 0.498 0.498 r
+(in)s
+0 g
+( )s
+F1 sf
+0.498 0.498 0 r
+(range)s
+F0 sf
+0 g
+(\()s
+0.498 0.125 0.498 r
+(0)s
+0 g
+(, M\):)s
+(        ax2.plot\(a.numpy\(\).squeeze\(\), basis.sliver_call\(i, a\).numpy\(\).squeeze\(\)\))61.2 514.9 ms
+(    fig.savefig\()61.2 494.9 ms
+0.498 0.125 0.498 r
+("plot.pdf")s
+0 g
+(\))s
+re sp
+%%PageTrailer
+%%Trailer
+%%Pages: 3
+%%EOF
+
