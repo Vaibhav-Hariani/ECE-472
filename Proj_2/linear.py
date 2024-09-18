@@ -8,12 +8,11 @@ class Linear(tf.Module):
         stddev = tf.math.sqrt(2 / (num_inputs + num_outputs))
 
         self.w = tf.Variable(
-            rng.normal(shape=[num_inputs, num_outputs], stddev=stddev),
+            rng.normal(shape=[num_inputs, num_outputs],stddev=stddev),
             trainable=True,
             name="Linear/w",
         )
 
-        # Does not make sense looking at the data, but leaving it in
         self.bias = bias
         if self.bias:
             self.b = tf.Variable(

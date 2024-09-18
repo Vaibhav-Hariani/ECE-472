@@ -159,3 +159,4 @@ if __name__ == "__main__":
         ax2.plot(a.numpy().squeeze(), basis.sliver_call(i, a).numpy().squeeze())
 
     fig.savefig("plot.pdf")
+
