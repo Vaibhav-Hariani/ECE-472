@@ -1,8 +1,9 @@
 import tensorflow as tf
 from linear import Linear
 from sklearn.inspection import DecisionBoundaryDisplay
+from adam import Adam
 
-
+#My Little Pony
 class MLP(tf.Module):
     def __init__(
         self,
@@ -48,11 +49,6 @@ def random_spiral_gen(datapoints, dev, initial, final):
     de_lin = np.sqrt(linspace) * final
     return (rng.normal(loc=de_lin, scale=dev), de_lin)
 
-def grad_update(step_size, variables, grads):
-    for var, grad in zip(variables, grads):
-        var.assign_sub(step_size * grad)
-
-
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from tqdm import trange
@@ -60,11 +56,11 @@ if __name__ == "__main__":
     # Constants for data (not using a config.yaml this time)
     SCALE = 5.4
     NUM_DATAPOINTS = 200
-    THETA_DEV = 0.4
+    THETA_DEV = 0.3
     THETA_INIT = 3 * np.pi / 5
     THETA_FINAL = 2 * np.pi * SCALE
     # The seed here is the same as the previous homework, but different generator?
-    rng = np.random.default_rng(seed=47)
+    rng = np.random.default_rng(seed=42)
     blue_thetas, blue_points = random_spiral_gen(
         NUM_DATAPOINTS, THETA_DEV, THETA_INIT, THETA_FINAL
     )
@@ -84,12 +80,8 @@ if __name__ == "__main__":
 
     # Combines the data
     dataset = np.concatenate((combined_red, combined_blue))
-    #    rng.shuffle(dataset)
-    # Model parameters
-    batch_size = 100
-    num_iters = 1000
-    # step_size = 0.05
-    # decay_rate = 0.999
+    BATCH_SIZE = 100
+    NUM_ITERS = 1000
 
     model = MLP(
         num_inputs=2,
@@ -100,36 +92,29 @@ if __name__ == "__main__":
         output_activation=tf.nn.sigmoid
     )        
 
-    bar = trange(num_iters)
-    ##using standard Adam implementation
-    optimizer = tf._optimizers.Adam()
+    bar = trange(NUM_ITERS)
+    #Custom adam implementation
+    optimizer = Adam(size=len(model.trainable_variables))
     epsilon = 1e-8
     for i in bar:
         batch_indices = rng.integers(
-            low=0, high=dataset.shape[0], size=batch_size).T
+            low=0, high=dataset.shape[0], size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
             slice = np.take(dataset, batch_indices, axis=0)
             points = slice[:, :2]
-            expected = slice[:, 2].reshape(batch_size,1)
-            # print(x_batch)
-            # print(y_batch)
-            # print(expected)
+            expected = slice[:, 2].reshape(BATCH_SIZE,1)
             calculated = tf.cast(model(points), dtype=tf.float64)
             loss = tf.math.reduce_mean(
                 -1 * (expected * tf.math.log(calculated+epsilon)
                       + (1 - expected) * tf.math.log(1-calculated + epsilon)))
 
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(grads,model.trainable_variables))
-        # grad_update(step_size, model.trainable_variables,grads)
-        # step_size *= decay_rate
-        if i % 30 == (30 - 1):
+        optimizer.train(grads=grads,vars=model.trainable_variables)
+        if i % 3 == 2:
             bar.set_description(
                 f"Step {i}; Loss => {loss.numpy():0.4f}, learning_rate => {0.001}"
             )
             bar.refresh()
-
-    fig, (ax1) = plt.subplots(1, 1)
 
     X, Y = np.meshgrid(
         np.linspace(dataset[:, 0].min(), dataset[:, 0].max()),
@@ -141,13 +126,3 @@ if __name__ == "__main__":
     display.ax_.scatter(red_x, red_y, c="r")
     display.ax_.scatter(blue_x, blue_y, c="b")
     display.figure_.savefig('Submissions/output_hw2.png')
-    # ax1.plot(blue_x, blue_y, "bo")
-    # ax1.plot(red_x, red_y, "ro")
-    # ax1.set_xlabel("x")
-    # ax1.set_ylabel("y")
-    # ax1.set_title("Fig1")
-    # h = ax1.set_ylabel("y", labelpad=10)
-    # h.set_rotation(0)
-
-    # fig.savefig("Submissions/plot.pdf")
-    # plt.show()
