@@ -22,7 +22,6 @@ class Adam():
         for i in range(self.size):
             self.m_ts[i] = self.beta_1 * self.m_ts[i] + (1-self.beta_1) * grads[i]
             self.v_ts[i] = self.beta_2 * self.v_ts[i] + (1-self.beta_2) * (grads[i] * grads[i])
-            m_t_hat = self.m_ts[i] / (1 - self.beta_1**self.t)
-            v_t_hat = self.v_ts[i] / (1 - self.beta_2**self.t)
-            offset = (self.step_size * m_t_hat / math.sqrt(v_t_hat + self.epsilon))
+            self.step_size = self.step_size * math.sqrt(1-self.beta_2**self.t)/(1-self.beta_1**self.t)
+            offset = (self.step_size * self.m_ts[i] / math.sqrt(self.v_ts[i] + self.epsilon))
             vars[i].assign_sub(offset)
