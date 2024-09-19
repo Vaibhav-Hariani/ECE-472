@@ -3,7 +3,7 @@ from linear import Linear
 from sklearn.inspection import DecisionBoundaryDisplay
 from adam import Adam
 
-#My Little Pony
+#My Little Perceptron
 class MLP(tf.Module):
     def __init__(
         self,
@@ -59,7 +59,6 @@ if __name__ == "__main__":
     THETA_DEV = 0.3
     THETA_INIT = 3 * np.pi / 5
     THETA_FINAL = 2 * np.pi * SCALE
-    # The seed here is the same as the previous homework, but different generator?
     rng = np.random.default_rng(seed=42)
     blue_thetas, blue_points = random_spiral_gen(
         NUM_DATAPOINTS, THETA_DEV, THETA_INIT, THETA_FINAL
