@@ -58,12 +58,11 @@ if __name__ == "__main__":
     from tqdm import trange
     import numpy as np
     # Constants for data (not using a config.yaml this time)
-
-    NUM_LOOPS = 5.35
+    SCALE = 5.4
     NUM_DATAPOINTS = 200
-    THETA_DEV = 0.3
+    THETA_DEV = 0.4
     THETA_INIT = 3 * np.pi / 5
-    THETA_FINAL = 2 * np.pi * NUM_LOOPS
+    THETA_FINAL = 2 * np.pi * SCALE
     # The seed here is the same as the previous homework, but different generator?
     rng = np.random.default_rng(seed=47)
     blue_thetas, blue_points = random_spiral_gen(
@@ -87,9 +86,9 @@ if __name__ == "__main__":
     dataset = np.concatenate((combined_red, combined_blue))
     #    rng.shuffle(dataset)
     # Model parameters
-    # step_size = 0.05
     batch_size = 100
     num_iters = 1000
+    # step_size = 0.05
     # decay_rate = 0.999
 
     model = MLP(
@@ -124,9 +123,9 @@ if __name__ == "__main__":
         optimizer.apply_gradients(zip(grads,model.trainable_variables))
         # grad_update(step_size, model.trainable_variables,grads)
         # step_size *= decay_rate
-        if i % 10 == (10 - 1):
+        if i % 30 == (30 - 1):
             bar.set_description(
-                f"Step {i}; Loss => {loss.numpy():0.4f}, step_size => {step_size:0.4f}"
+                f"Step {i}; Loss => {loss.numpy():0.4f}, learning_rate => {0.001}"
             )
             bar.refresh()
 
