@@ -2,3 +2,4 @@ venv
 Submissions
 *.pdf
 */__pycache__/
+Proj_3/MNIST_ORG
