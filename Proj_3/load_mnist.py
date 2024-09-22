@@ -1,7 +1,5 @@
 import numpy as np
 import gzip
-import os
-import matplotlib.pyplot as plt
 
 # Using this as a reference for format
 # https://yann.lecun.com/exdb/mnist/

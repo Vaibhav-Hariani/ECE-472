@@ -1,42 +1,38 @@
-from tensorflow import math, identity
+# from tensorflow import math, identity
+
+from tensorflow import math
+
 
 class Adam:
-    # Custom Adam implementation
     def __init__(
-        self, size, beta_1=0.9, beta_2=0.999, step_size=0.001, epsilon=1e-8, w=0,in_func=identity
+        self,
+        size,
+        beta_1=0.9,
+        beta_2=0.999,
+        step_size=0.001,
+        epsilon=1e-8,
     ):
         self.beta_1 = beta_1
         self.beta_2 = beta_2
         self.step_size = step_size
         self.epsilon = epsilon
         self.t = 0
-        self.w = w
         self.size = size
         self.m_ts = [0] * size
         self.v_ts = [0] * size
-        self.in_func=in_func
 
     def train(self, grads, vars, adamW=False):
         self.t += 1
         for i in range(self.size):
-            grad = grads[i]
-            if not adamW:
-                grad += vars[i] * self.w
-
-            self.m_ts[i] = self.beta_1 * self.m_ts[i] + (1 - self.beta_1) * grad
+            self.m_ts[i] = self.beta_1 * self.m_ts[i] + (1 - self.beta_1) * grads[i]
             self.v_ts[i] = self.beta_2 * self.v_ts[i] + (1 - self.beta_2) * (
-                grad * grad
+                grads[i] * grads[i]
             )
-            self.step_size = (
-                self.step_size
-                * math.sqrt(1 - self.beta_2**self.t)
-                / (1 - self.beta_1**self.t)
-            )
-            epsilon = self.epsilon / math.sqrt(1 - self.beta_2**self.t)
-            offset = self.step_size * self.m_ts[i] / math.sqrt(self.v_ts[i] + epsilon)
+            m_t_hat = self.m_ts[i] / (1 - self.beta_1**self.t)
+            v_t_hat = self.v_ts[i] / (1 - self.beta_2**self.t)
+            offset = self.step_size * m_t_hat / math.sqrt(v_t_hat + self.epsilon)
             if adamW:
                 offset += self.w * vars[i]
-            offset = self.in_func(offset)
             vars[i].assign_sub(offset)
 
     def AdaMax(self, grads, vars):
