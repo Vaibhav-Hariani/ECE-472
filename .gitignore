@@ -3,3 +3,4 @@ Submissions
 *.pdf
 */__pycache__/
 MNIST
+.vscode

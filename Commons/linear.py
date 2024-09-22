@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 
+##Created by Professor Curro
 class Linear(tf.Module):
     def __init__(self, num_inputs, num_outputs, bias=True):
         rng = tf.random.get_global_generator()
@@ -8,7 +9,7 @@ class Linear(tf.Module):
         stddev = tf.math.sqrt(2 / (num_inputs + num_outputs))
 
         self.w = tf.Variable(
-            rng.normal(shape=[num_inputs, num_outputs],stddev=stddev),
+            rng.normal(shape=[num_inputs, num_outputs], stddev=stddev),
             trainable=True,
             name="Linear/w",
         )

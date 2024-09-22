@@ -1,7 +1,7 @@
 import tensorflow as tf
-from linear import Linear
+from Commons.linear import Linear
 from sklearn.inspection import DecisionBoundaryDisplay
-from adam import Adam
+from Commons.adam import Adam
 
 #My Little Perceptron
 class MLP(tf.Module):
