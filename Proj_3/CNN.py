@@ -10,6 +10,9 @@ class CNN(tf.Module):
 
 if __name__ == "__main__":
     mnist_location = "MNIST"
-    training_images = os.path.join(mnist_location, "train-images-idx3-ubyte.gz")
-    training_labels = os.path.join(mnist_location, "train-labels-idx1-ubyte.gz")
-    load_mnist()
+    images_path = os.path.join(mnist_location, "train-images-idx3-ubyte.gz")
+    labels_path = os.path.join(mnist_location, "train-labels-idx1-ubyte.gz")
+    training_images = load_data_arr(images_path)
+    training_labels = load_data_arr(labels_path)
+    print(training_labels)
+

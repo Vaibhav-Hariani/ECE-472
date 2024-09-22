@@ -18,10 +18,9 @@ def load_data_arr(path, render_d=True):
         raise Exception("Unsupported Dtype")
 
     raw_dims = f.read(1)
-    dims = int.from_bytes(raw_dims, byteorder="little")
+    dims = int.from_bytes(raw_dims, byteorder="big")
     dimension_data = []
     num_bytes = 1
-    print(dims)
     for i in range(0, dims):
         current_dim_size = int.from_bytes(f.read(4), byteorder="big")
         dimension_data.append(current_dim_size)
