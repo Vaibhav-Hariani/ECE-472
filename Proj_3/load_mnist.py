@@ -33,6 +33,6 @@ def load_data_arr(path,render_d = True):
     data = np.frombuffer(buf, dtype=encoded_dtype).reshape(dimension_data)
     return data
 
-
-data = load_data_arr('MNIST/train-labels-idx3-ubyte.gz')
-print(data)
+if __name__ == "__main__":
+    data = load_data_arr('MNIST/train-labels-idx3-ubyte.gz')
+    print(data)
