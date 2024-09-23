@@ -15,8 +15,7 @@ class MLP(tf.Module):
 
         self.hidden_activation = hidden_activation
         self.output_activation = output_activation
-        # In this project, 1 output (Binary Classifier)
-        # num inputs is 2: x coordinate & y coordinate
+
         self.linear_steps = []
         if num_hidden_layers == 0:
             lin_obj = Linear(num_inputs, num_outputs)
