@@ -3,7 +3,8 @@ from linear import Linear
 from sklearn.inspection import DecisionBoundaryDisplay
 from adam import Adam
 
-#My Little Perceptron
+
+# My Little Perceptron
 class MLP(tf.Module):
     def __init__(
         self,
@@ -27,7 +28,7 @@ class MLP(tf.Module):
         else:
             obj1 = Linear(num_inputs, hidden_layer_width)
             self.linear_steps.append(obj1)
-            for x in range(0, num_hidden_layers-1):
+            for x in range(0, num_hidden_layers - 1):
                 lin_obj = Linear(hidden_layer_width, hidden_layer_width)
                 self.linear_steps.append(lin_obj)
             final_obj = Linear(hidden_layer_width, num_outputs)
@@ -49,10 +50,12 @@ def random_spiral_gen(datapoints, dev, initial, final):
     de_lin = np.sqrt(linspace) * final
     return (rng.normal(loc=de_lin, scale=dev), de_lin)
 
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from tqdm import trange
     import numpy as np
+
     # Constants for data (not using a config.yaml this time)
     SCALE = 5.4
     NUM_DATAPOINTS = 200
@@ -88,27 +91,30 @@ if __name__ == "__main__":
         num_hidden_layers=5,
         hidden_layer_width=256,
         hidden_activation=tf.nn.leaky_relu,
-        output_activation=tf.nn.sigmoid
-    )        
+        output_activation=tf.nn.sigmoid,
+    )
 
     bar = trange(NUM_ITERS)
-    #Custom adam implementation
+    # Custom adam implementation
     optimizer = Adam(size=len(model.trainable_variables))
     epsilon = 1e-8
     for i in bar:
-        batch_indices = rng.integers(
-            low=0, high=dataset.shape[0], size=BATCH_SIZE).T
+        batch_indices = rng.integers(low=0, high=dataset.shape[0], size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
             slice = np.take(dataset, batch_indices, axis=0)
             points = slice[:, :2]
-            expected = slice[:, 2].reshape(BATCH_SIZE,1)
+            expected = slice[:, 2].reshape(BATCH_SIZE, 1)
             calculated = tf.cast(model(points), dtype=tf.float64)
             loss = tf.math.reduce_mean(
-                -1 * (expected * tf.math.log(calculated+epsilon)
-                      + (1 - expected) * tf.math.log(1-calculated + epsilon)))
+                -1
+                * (
+                    expected * tf.math.log(calculated + epsilon)
+                    + (1 - expected) * tf.math.log(1 - calculated + epsilon)
+                )
+            )
 
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.train(grads=grads,vars=model.trainable_variables)
+        optimizer.train(grads=grads, vars=model.trainable_variables)
         if i % 3 == 2:
             bar.set_description(
                 f"Step {i}; Loss => {loss.numpy():0.4f}, learning_rate => {0.001}"
@@ -117,11 +123,12 @@ if __name__ == "__main__":
 
     X, Y = np.meshgrid(
         np.linspace(dataset[:, 0].min(), dataset[:, 0].max()),
-        np.linspace(dataset[:, 1].min(), dataset[:, 1].max()))
+        np.linspace(dataset[:, 1].min(), dataset[:, 1].max()),
+    )
     positions = np.vstack([X.ravel(), Y.ravel()]).T
     pred = np.reshape(model(positions), X.shape)
     display = DecisionBoundaryDisplay(xx0=X, xx1=Y, response=pred)
     display.plot()
     display.ax_.scatter(red_x, red_y, c="r")
     display.ax_.scatter(blue_x, blue_y, c="b")
-    display.figure_.savefig('Submissions/output_hw2.png')
+    display.figure_.savefig("Submissions/output_hw2.png")
