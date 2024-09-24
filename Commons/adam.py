@@ -11,6 +11,7 @@ class Adam:
         beta_2=0.999,
         step_size=0.001,
         epsilon=1e-8,
+        w=0.0005
     ):
         self.beta_1 = beta_1
         self.beta_2 = beta_2
@@ -20,6 +21,7 @@ class Adam:
         self.size = size
         self.m_ts = [0] * size
         self.v_ts = [0] * size
+        self.w = w
 
     def train(self, grads, vars, adamW=False):
         self.t += 1

@@ -1,8 +1,11 @@
 import tensorflow as tf
 from linear import Linear
 
+
 # My Little Perceptron
 class MLP(tf.Module):
+    # A multi layer perceptron implementation:
+
     def __init__(
         self,
         num_inputs,
@@ -11,10 +14,12 @@ class MLP(tf.Module):
         hidden_layer_width,
         hidden_activation=tf.identity,
         output_activation=tf.identity,
+        dropout_rate=0
     ):
 
         self.hidden_activation = hidden_activation
         self.output_activation = output_activation
+        self.dropout_rate=dropout_rate
 
         self.linear_steps = []
         if num_hidden_layers == 0:
@@ -30,10 +35,12 @@ class MLP(tf.Module):
             final_obj = Linear(hidden_layer_width, num_outputs)
             self.linear_steps.append(final_obj)
 
-    def __call__(self, layer_in):
+    def __call__(self, layer_in,dropout=False):
         current = layer_in
         for i in self.linear_steps[:-1]:
             current = i(current)
             current = self.hidden_activation(current)
+            if dropout:
+                current=tf.nn.dropout(current,self.dropout_rate)
         current = self.linear_steps[-1](current)
         return self.output_activation(current)

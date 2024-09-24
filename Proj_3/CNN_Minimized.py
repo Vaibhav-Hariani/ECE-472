@@ -27,10 +27,10 @@ class Classifier(tf.Module):
         self,
         input_dims,
         output_dim,
-        conv_dims=3,
-        num_convs=4,
-        num_lin_layers=5,
-        hidden_lin_width=125,
+        conv_dims=4,
+        num_convs=1,
+        num_lin_layers=1,
+        hidden_lin_width=10,
         lin_activation=tf.identity,
         lin_output_activation=tf.identity,
         dropout_rate=0.1,
@@ -42,8 +42,9 @@ class Classifier(tf.Module):
             self.convs.append(Conv2d(conv_dims,dropout_rate=dropout_rate))
     
         self.pool_size=pool_size
+    ##Hard Coded for this section: didn't want to have to deal with parametrizing the number of inputs 
         self.perceptron = MLP(
-            num_inputs= input_dims*2,
+            num_inputs= (input_dims // pool_size)**2,
             num_outputs=output_dim,
             num_hidden_layers=num_lin_layers,
             hidden_layer_width=hidden_lin_width,
@@ -56,6 +57,9 @@ class Classifier(tf.Module):
         for conv in self.convs:
             current = conv(current,dropout)
         
+        if(self.pool_size != 0):
+            current = tf.nn.avg_pool2d(current,self.pool_size,strides=self.pool_size,padding='SAME')
+
         current = tf.reshape(current, (current.shape[0],-1))
         return self.perceptron(current,dropout)
 
@@ -120,6 +124,7 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.1,
+        pool_size=2
     )
     optimizer = Adam(size=len(model.trainable_variables),step_size=0.002)
     # Split training data down validate split
@@ -160,7 +165,7 @@ if __name__ == "__main__":
         images = load_data_arr(images_path).astype(np.float32)
         labels = load_data_arr(labels_path)
 
-        images = tf.expand_dims(images,axes=3)
+        images = tf.expand_dims(images,axis=3)
         model_output = np.argmax(model(images),axis=1)
         accuracy = np.sum(model_output == labels) / labels.size
         print("On test set, achieved accuracy of %0.1f %%" % (100 * accuracy))
