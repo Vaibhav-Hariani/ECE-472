@@ -1,3 +1,4 @@
+import math
 import tensorflow as tf
 from MLP import MLP
 from adam import Adam
@@ -103,8 +104,6 @@ if __name__ == "__main__":
 
     restruct_labels = restructure(labels)
 
-    # Used to get random indexes for SGD/Adam
-    max_ = np.arange(labels.size)
     ##Model for 96.3
     model = Classifier(
         input_dims=28,
@@ -124,6 +123,14 @@ if __name__ == "__main__":
     bar = trange(NUM_ITERS)
     accuracy = 0
 
+
+    ##Converting batch_size to epochs
+    epochs = 0     
+    total_epochs = (BATCH_SIZE * NUM_ITERS / size)
+
+    n_min = 0.1
+    n_max = 2
+
     for i in bar:
         batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
@@ -132,12 +139,15 @@ if __name__ == "__main__":
 
             batch_labels = restruct_labels[batch_indices, :]
             predicted = model(batch_images,True)
-            # Soft-max at the end
             # Cross Entropy Loss Function
             loss = tf.keras.losses.categorical_crossentropy(batch_labels,predicted)
             loss = tf.math.reduce_mean(loss)
+        
+        epochs += (BATCH_SIZE / size)
+        ##Cosine annealing
+        n_t = n_min + (n_max - n_min) * (1+tf.math.cos(epochs *  math.pi/ total_epochs ))
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.train(grads=grads, vars=model.trainable_variables,adamW=True)
+        optimizer.train(grads=grads, vars=model.trainable_variables,adamW=True,decay_scale=n_t)
         if i % 10 == 9:
             if i % 100 == 99:
                 model_output = np.argmax(model(validation_images),axis=1)
@@ -161,4 +171,4 @@ if __name__ == "__main__":
         images = tf.expand_dims(images,axis=3)
         model_output = np.argmax(model(images),axis=1)
         accuracy = np.sum(model_output == labels) / labels.size
-        print("On test set, achieved accuracy of %0.1f %%" % (100 * accuracy))
+        print("On test set, achieved accuracy of %0.1f%%" % (100 * accuracy))

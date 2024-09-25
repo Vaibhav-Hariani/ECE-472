@@ -24,7 +24,7 @@ class Adam:
         self.v_ts = [0] * size
         self.w = w
 
-    def train(self, grads, vars, adamW=False,decay_func=identity):
+    def train(self, grads, vars, adamW=False,decay_scale=1):
         self.t += 1
         for i in range(self.size):
             self.m_ts[i] = self.beta_1 * self.m_ts[i] + (1 - self.beta_1) * grads[i]
@@ -36,7 +36,7 @@ class Adam:
             offset = self.step_size * m_t_hat / math.sqrt(v_t_hat + self.epsilon)
             if adamW:
                 offset += self.w * vars[i]
-            offset = decay_func(offset)
+            offset = decay_scale * offset
             vars[i].assign_sub(offset)
 
     def AdaMax(self, grads, vars):
