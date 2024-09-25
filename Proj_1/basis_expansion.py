@@ -1,4 +1,5 @@
 import tensorflow as tf
+
 from Commons.linear import Linear
 
 
@@ -44,12 +45,10 @@ def grad_update(step_size, variables, grads):
 
 if __name__ == "__main__":
     import argparse
-
     from pathlib import Path
 
     import matplotlib.pyplot as plt
     import yaml
-
     from tqdm import trange
 
     parser = argparse.ArgumentParser(

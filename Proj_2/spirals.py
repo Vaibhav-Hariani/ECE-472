@@ -1,7 +1,7 @@
 import tensorflow as tf
+from adam import Adam
 from linear import Linear
 from sklearn.inspection import DecisionBoundaryDisplay
-from adam import Adam
 
 
 # My Little Perceptron
@@ -53,8 +53,8 @@ def random_spiral_gen(datapoints, dev, initial, final):
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    from tqdm import trange
     import numpy as np
+    from tqdm import trange
 
     # Constants for data (not using a config.yaml this time)
     SCALE = 5.4

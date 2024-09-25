@@ -1,24 +1,28 @@
 import math
+
 import tensorflow as tf
-from MLP import MLP
 from adam import Adam
+from MLP import MLP
 
 
 class Conv2d(tf.Module):
-    def __init__(self, dim, in_channel=1, out_channel=1,dropout_rate=0,seed=[42,0]):
+    def __init__(self, dim, in_channel=1, out_channel=1, dropout_rate=0, seed=[42, 0]):
 
         rng = tf.random.get_global_generator()
         self.kernel = tf.Variable(
             rng.normal(shape=[dim, dim, in_channel, out_channel]), trainable=True
         )
-        self.dropout_rate=dropout_rate
-        self.seed=seed
+        self.dropout_rate = dropout_rate
+        self.seed = seed
 
-    def __call__(self, input,dropout=False):
+    def __call__(self, input, dropout=False):
         conv = tf.nn.conv2d(input, self.kernel, strides=1, padding="SAME")
         if dropout:
-            return tf.nn.experimental.stateless_dropout(conv,self.dropout_rate,seed=self.seed)
+            return tf.nn.experimental.stateless_dropout(
+                conv, self.dropout_rate, seed=self.seed
+            )
         return conv
+
 
 class Classifier(tf.Module):
 
@@ -37,24 +41,26 @@ class Classifier(tf.Module):
         self.input_dims = input_dims
         self.convs = []
         for i in range(0, num_convs):
-            self.convs.append(Conv2d(conv_dims,dropout_rate=dropout_rate))
-    
+            self.convs.append(Conv2d(conv_dims, dropout_rate=dropout_rate))
+
         self.perceptron = MLP(
-            num_inputs= input_dims**2,
+            num_inputs=input_dims**2,
             num_outputs=output_dim,
             num_hidden_layers=num_lin_layers,
             hidden_layer_width=hidden_lin_width,
             hidden_activation=lin_activation,
             output_activation=lin_output_activation,
-            dropout_rate=dropout_rate)
+            dropout_rate=dropout_rate,
+        )
 
-    def __call__(self, input,dropout=False):
+    def __call__(self, input, dropout=False):
         current = input
         for conv in self.convs:
-            current = conv(current,dropout)
-        
-        current = tf.reshape(current, (current.shape[0],-1))
-        return self.perceptron(current,dropout)
+            current = conv(current, dropout)
+
+        current = tf.reshape(current, (current.shape[0], -1))
+        return self.perceptron(current, dropout)
+
 
 # Converts 1xn labels into nx10 labels with each index representing a 0
 def restructure(labels):
@@ -65,11 +71,13 @@ def restructure(labels):
 
 
 if __name__ == "__main__":
-    from adam import Adam
-    from tqdm import trange
-    import numpy as np
     import os
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from adam import Adam
     from load_mnist import load_data_arr
+    from tqdm import trange
 
     # Getting training data from local MNIST path
     mnist_location = "MNIST"
@@ -83,10 +91,6 @@ if __name__ == "__main__":
     labels = load_data_arr(labels_path)
     # images = images.T
 
-
-    ##Tested for 96.3
-    # BATCH_SIZE = 100
-    # NUM_ITERS = 2500
     BATCH_SIZE = 100
     NUM_ITERS = 2500
 
@@ -98,9 +102,8 @@ if __name__ == "__main__":
     np_rng = np.random.default_rng(seed=42)
     size = int(VALIDATE_SPLIT * labels.size)
 
-    validation_images = tf.expand_dims(images[size:, :, :],axis=3)
+    validation_images = tf.expand_dims(images[size:, :, :], axis=3)
     validation_labels = labels[size:]
-
 
     restruct_labels = restructure(labels)
 
@@ -117,50 +120,59 @@ if __name__ == "__main__":
         dropout_rate=0.2,
     )
 
-
-    optimizer = Adam(size=len(model.trainable_variables),step_size=0.001)
+    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
     # Split training data down validate split
     bar = trange(NUM_ITERS)
     accuracy = 0
 
-
     ##Converting batch_size to epochs
-    epochs = 0     
-    total_epochs = (BATCH_SIZE * NUM_ITERS / size)
+    epochs = 0
+    total_epochs = BATCH_SIZE * NUM_ITERS / size
 
     n_min = 0.1
     n_max = 2
 
+    validation_data = []
+    validation_indexes = []
     for i in bar:
         batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
             image_slice = images[batch_indices, :, :]
-            batch_images = tf.expand_dims(image_slice,axis=3)
+            batch_images = tf.expand_dims(image_slice, axis=3)
 
             batch_labels = restruct_labels[batch_indices, :]
-            predicted = model(batch_images,True)
+            predicted = model(batch_images, True)
             # Cross Entropy Loss Function
-            loss = tf.keras.losses.categorical_crossentropy(batch_labels,predicted)
+            loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
             loss = tf.math.reduce_mean(loss)
-        
-        epochs += (BATCH_SIZE / size)
+
+        epochs += BATCH_SIZE / size
         ##Cosine annealing
-        n_t = n_min + (n_max - n_min) * (1+tf.math.cos(epochs *  math.pi/ total_epochs ))
-        grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.train(grads=grads, vars=model.trainable_variables,adamW=True,decay_scale=n_t)
-        if i % 10 == 9:
-            if i % 100 == 99:
-                model_output = np.argmax(model(validation_images),axis=1)
-                accuracy = np.sum(model_output == validation_labels) / validation_labels.size
-            bar.set_description(
-            f"Step {i}; Loss => {loss.numpy():0.4f}, accuracy => {accuracy:0.3f}:"
+        n_t = n_min + (n_max - n_min) * (
+            1 + tf.math.cos(epochs * math.pi / total_epochs)
         )
+        grads = tape.gradient(loss, model.trainable_variables)
+        optimizer.train(
+            grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
+        )
+        if i % 10 == 9:
+            # if(i % 100 == 99):
+            model_output = np.argmax(model(validation_images), axis=1)
+            accuracy = (
+                np.sum(model_output == validation_labels) / validation_labels.size
+            )
+            validation_data.append(accuracy * 100)
+            validation_indexes.append(i)
+            bar.set_description(
+                f"Step {i}; Loss => {loss.numpy():0.4f}, accuracy => {accuracy:0.3f}:"
+            )
             bar.refresh()
 
-    model_output = np.argmax(model(validation_images),axis=1)
+    model_output = np.argmax(model(validation_images), axis=1)
     accuracy = np.sum(model_output == validation_labels) / validation_labels.size
     print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
 
+    fig, ax1 = plt.subplots(1, 1)
     if TEST:
         images_path = os.path.join(mnist_location, "t10k-images-idx3-ubyte.gz")
         labels_path = os.path.join(mnist_location, "t10k-labels-idx1-ubyte.gz")
@@ -168,7 +180,21 @@ if __name__ == "__main__":
         images = load_data_arr(images_path).astype(np.float32)
         labels = load_data_arr(labels_path)
 
-        images = tf.expand_dims(images,axis=3)
-        model_output = np.argmax(model(images),axis=1)
+        images = tf.expand_dims(images, axis=3)
+        model_output = np.argmax(model(images), axis=1)
         accuracy = np.sum(model_output == labels) / labels.size
+
         print("On test set, achieved accuracy of %0.1f%%" % (100 * accuracy))
+
+    (line,) = ax1.plot(validation_indexes, validation_data)
+    line.set_label("Validation Data")
+    ax1.set_xlabel("Iterations")
+    ax1.set_ylabel("Accuracy", labelpad=10)
+    ax1.set_title("Validation Dataset Accuracy (Percent / Iteration )")
+
+    ax1.axhline(y=95.5, color="r", linestyle="-")
+
+    ax1.text(ax1.get_xlim()[1] + 0.1, 95.5, f"y={95.5}")
+    ax1.legend()
+
+    fig.savefig("Submissions/NMIST_Validation_Graph.png")

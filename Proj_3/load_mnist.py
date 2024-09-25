@@ -1,5 +1,6 @@
-import numpy as np
 import gzip
+
+import numpy as np
 
 # Using this as a reference for format
 # https://yann.lecun.com/exdb/mnist/
