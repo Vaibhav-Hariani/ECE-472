@@ -1,6 +1,7 @@
 # from tensorflow import math, identity
 
 from tensorflow import math
+from tensorflow import identity
 
 
 class Adam:
@@ -11,7 +12,7 @@ class Adam:
         beta_2=0.999,
         step_size=0.001,
         epsilon=1e-8,
-        w=0.0005
+        w=0.0005,
     ):
         self.beta_1 = beta_1
         self.beta_2 = beta_2
@@ -23,7 +24,7 @@ class Adam:
         self.v_ts = [0] * size
         self.w = w
 
-    def train(self, grads, vars, adamW=False):
+    def train(self, grads, vars, adamW=False,decay_func=identity):
         self.t += 1
         for i in range(self.size):
             self.m_ts[i] = self.beta_1 * self.m_ts[i] + (1 - self.beta_1) * grads[i]
@@ -35,6 +36,7 @@ class Adam:
             offset = self.step_size * m_t_hat / math.sqrt(v_t_hat + self.epsilon)
             if adamW:
                 offset += self.w * vars[i]
+            offset = decay_func(offset)
             vars[i].assign_sub(offset)
 
     def AdaMax(self, grads, vars):

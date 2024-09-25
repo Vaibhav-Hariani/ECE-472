@@ -14,9 +14,10 @@ class MLP(tf.Module):
         hidden_layer_width,
         hidden_activation=tf.identity,
         output_activation=tf.identity,
-        dropout_rate=0
+        dropout_rate=0,
+        seed= [42,0]
     ):
-
+        self.seed=seed
         self.hidden_activation = hidden_activation
         self.output_activation = output_activation
         self.dropout_rate=dropout_rate
@@ -41,6 +42,6 @@ class MLP(tf.Module):
             current = i(current)
             current = self.hidden_activation(current)
             if dropout:
-                current=tf.nn.dropout(current,self.dropout_rate)
+                current=tf.nn.experimental.stateless_dropout(current,self.dropout_rate,seed=self.seed)
         current = self.linear_steps[-1](current)
         return self.output_activation(current)

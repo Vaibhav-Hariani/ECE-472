@@ -4,21 +4,19 @@ from adam import Adam
 
 
 class Conv2d(tf.Module):
-    def __init__(self, dim, in_channel=1, out_channel=1,dropout_rate=0,strides=1):
-        # if out_channel == None:
-        #     out_channel = dim
+    def __init__(self, dim, in_channel=1, out_channel=1,dropout_rate=0,seed=[42,0]):
+
         rng = tf.random.get_global_generator()
-        # Square kernel
         self.kernel = tf.Variable(
             rng.normal(shape=[dim, dim, in_channel, out_channel]), trainable=True
         )
         self.dropout_rate=dropout_rate
-        self.strides=strides
+        self.seed=seed
 
     def __call__(self, input,dropout=False):
-        conv = tf.nn.conv2d(input, self.kernel, strides=self.strides, padding="SAME")
+        conv = tf.nn.conv2d(input, self.kernel, strides=1, padding="SAME")
         if dropout:
-            return tf.nn.dropout(conv,self.dropout_rate)
+            return tf.nn.experimental.stateless_dropout(conv,self.dropout_rate,seed=self.seed)
         return conv
 
 class Classifier(tf.Module):
@@ -34,16 +32,14 @@ class Classifier(tf.Module):
         lin_activation=tf.identity,
         lin_output_activation=tf.identity,
         dropout_rate=0.1,
-        pool_size=0
     ):
         self.input_dims = input_dims
         self.convs = []
         for i in range(0, num_convs):
             self.convs.append(Conv2d(conv_dims,dropout_rate=dropout_rate))
     
-        self.pool_size=pool_size
         self.perceptron = MLP(
-            num_inputs= input_dims*2,
+            num_inputs= input_dims**2,
             num_outputs=output_dim,
             num_hidden_layers=num_lin_layers,
             hidden_layer_width=hidden_lin_width,
@@ -109,19 +105,21 @@ if __name__ == "__main__":
 
     # Used to get random indexes for SGD/Adam
     max_ = np.arange(labels.size)
-
+    ##Model for 96.3
     model = Classifier(
         input_dims=28,
         output_dim=10,
         conv_dims=4,
-        num_convs=3,
+        num_convs=4,
         num_lin_layers=5,
         hidden_lin_width=125,
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
-        dropout_rate=0.1,
+        dropout_rate=0.2,
     )
-    optimizer = Adam(size=len(model.trainable_variables),step_size=0.002)
+
+
+    optimizer = Adam(size=len(model.trainable_variables),step_size=0.001)
     # Split training data down validate split
     bar = trange(NUM_ITERS)
     accuracy = 0
@@ -160,7 +158,7 @@ if __name__ == "__main__":
         images = load_data_arr(images_path).astype(np.float32)
         labels = load_data_arr(labels_path)
 
-        images = tf.expand_dims(images,axes=3)
+        images = tf.expand_dims(images,axis=3)
         model_output = np.argmax(model(images),axis=1)
         accuracy = np.sum(model_output == labels) / labels.size
         print("On test set, achieved accuracy of %0.1f %%" % (100 * accuracy))
