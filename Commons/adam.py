@@ -1,6 +1,6 @@
 # from tensorflow import math, identity
 
-from tensorflow import identity, math
+from tensorflow import math
 
 
 class Adam:
