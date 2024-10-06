@@ -6,7 +6,7 @@ class Linear(tf.Module):
     def __init__(self, num_inputs, num_outputs, bias=True):
         rng = tf.random.get_global_generator()
 
-        stddev = 2 / (num_inputs * num_outputs)
+        stddev = 2 / (num_inputs + num_outputs)
 
         self.w = tf.Variable(
             rng.normal(shape=[num_inputs, num_outputs], stddev=stddev),
