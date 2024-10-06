@@ -4,3 +4,5 @@ Submissions
 */__pycache__/
 MNIST
 .vscode
+CIFAR
+*.png
