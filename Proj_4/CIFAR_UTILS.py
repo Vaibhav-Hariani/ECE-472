@@ -33,3 +33,10 @@ def augment(image_set: np.ndarray,render=False):
         render_img(noised[0], "noised.png")
 
     return np.concatenate((flip_1,flip_2,invert,noised))
+
+# Converts 1xn labels into nx10 labels with each index representing a 0
+def restructure(labels):
+    mat = np.zeros((labels.size, 10))
+    for x in range(0, labels.size):
+        mat[x, labels[x]] = 1
+    return mat

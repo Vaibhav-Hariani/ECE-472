@@ -2,54 +2,66 @@ import math
 
 import tensorflow as tf
 from conv2d import Conv2d
+from adam import Adam
 from MLP import MLP
 
+
 class GroupNorm(tf.Module):
-    def __init__(self,groups,channels, eps=1e-5, seed = 42):
+    def __init__(self, groups, channels, eps=1e-5, seed=42):
         rng = tf.random.get_global_generator()
         rng.reset_from_seed(seed)
-        stddev = 1/ channels
+        stddev = 1 / channels
         self.gamma = tf.Variable(
-            rng.normal(shape=[1,channels,1,1], stddev=stddev),
+            rng.normal(shape=[1, 1, 1, channels], stddev=stddev),
             trainable=True,
             name="GN/gamma",
         )
         self.beta = tf.Variable(
-            rng.normal(shape=[1,channels,1,1], stddev=stddev),
+            rng.normal(shape=[1, 1, 1,channels], stddev=stddev),
             trainable=True,
             name="GN/beta",
         )
         self.eps = eps
         self.groups = groups
-    
+
     ##Directly from the paper
-    def __call__(self,x):
-        N,C,H,W = x.shape
-        #C = channels
+    def __call__(self, x):
+        N, H, W, C = x.shape
+        # C = channels
         x = tf.reshape(x, [N, self.groups, C // self.groups, H, W])
-        mean, var = tf.nn.moments(x, [2,3,4], keep_dims=True)
+        mean, var = tf.nn.moments(x, [2, 3, 4], keepdims=True)
         x = (x - mean) / tf.sqrt(var + self.eps)
-        x = tf.reshape(x, [N,C,H,W])
+        x = tf.reshape(x, [N, H, W, C])
         return x * self.gamma + self.beta
 
 
-
 class ResidualBlock(tf.Module):
-    def __init__(self,dim,channels, groups,activation,dropout_rate=0.2, layers_between=2):
-        self.GN = GroupNorm(groups=groups,channels=channels)
+    def __init__(
+        self,
+        dim,
+        channels,
+        groups,
+        activation=tf.nn.relu,
+        dropout_rate=0.2,
+        layers_between=2,
+    ):
+        self.GN = GroupNorm(groups=groups, channels=channels)
         self.convs = []
-        for layer in range(layers_between): 
-            self.convs.append(Conv2d(dim=dim,in_channel=3,out_channel=3,dropout_rate=dropout_rate))
+        for layer in range(layers_between):
+            self.convs.append(
+                Conv2d(dim=dim, in_channel=3, out_channel=3, dropout_rate=dropout_rate)
+            )
         self.activation = activation
 
-    def __call__(self,input,dropout=False):
+    def __call__(self, input, dropout=False):
         ##Using this to prevent soft copying
         intermediate = tf.identity(input)
-        for layer in self.convs :
+        for layer in self.convs:
             intermediate = self.GN(intermediate)
             intermediate = self.activation(intermediate)
-            intermediate = layer(intermediate,dropout)
+            intermediate = layer(intermediate, dropout)
         return input + intermediate
+
 
 class Classifier(tf.Module):
     def __init__(
@@ -61,7 +73,9 @@ class Classifier(tf.Module):
         conv_dims=5,
         num_res=4,
         num_lin_layers=5,
+        batch_norm_groups=3,
         hidden_lin_width=125,
+        conv_activation=tf.identity,
         lin_activation=tf.identity,
         lin_output_activation=tf.identity,
         dropout_rate=0.1,
@@ -70,14 +84,21 @@ class Classifier(tf.Module):
         self.res_layers = []
 
         for res_layer in range(0, num_res):
-            self.res_layers.append(ResidualBlock(dim=conv_dims,channels=input_channels,dropout_rate=dropout_rate))
-        
-        self.pool_kernel = [1,pool_dims,pool_dims,1]
-        self.strides = [1,pool_dims,pool_dims,1]
-        self.padding='SAME'
+            self.res_layers.append(
+                ResidualBlock(
+                    dim=conv_dims,
+                    channels=input_channels,
+                    groups=batch_norm_groups,
+                    activation=conv_activation,
+                    dropout_rate=dropout_rate,
+                )
+            )
+        self.pool_kernel = [1, pool_dims, pool_dims, 1]
+        self.strides = [1, pool_dims, pool_dims, 1]
+        self.padding = "SAME"
 
         self.output_perceptron = MLP(
-            num_inputs=input_dims**(2*input_channels)/(pool_dims**2),
+            num_inputs= (input_dims * input_dims * input_channels) // (pool_dims*pool_dims),
             num_outputs=output_dim,
             num_hidden_layers=num_lin_layers,
             hidden_layer_width=hidden_lin_width,
@@ -93,9 +114,11 @@ class Classifier(tf.Module):
 
         # Define the max pooling operation
 
-        pooled_out = tf.nn.max_pool2d(current,ksize=self.pool_kernel,strides=self.size,padding=self.padding)
+        pooled_out = tf.nn.max_pool2d(
+            current, ksize=self.pool_kernel, strides=self.strides, padding=self.padding
+        )
         perceptron_in = tf.reshape(pooled_out, (pooled_out.shape[0], -1))
-        
+
         ##Flattens for perceptron
         return self.output_perceptron(perceptron_in, dropout)
 
@@ -103,30 +126,144 @@ class Classifier(tf.Module):
 if __name__ == "__main__":
     import os
     import numpy as np
-    from CIFAR_UTILS import unpickle, augment
+    from CIFAR_UTILS import unpickle, augment, restructure
     from tqdm import trange
 
     # Getting training data from local CIFAR
     CIFAR_LOC = "CIFAR"
-    CIFAR_FOLDER= "cifar-10-batches-py"
-    IMG_DIMS=(-1,3,32,32)
+    CIFAR_FOLDER = "cifar-10-batches-py"
+    IMG_DIMS = (-1, 3, 32, 32)
 
-    batches = ["data_batch_" + str(x+1) for x in range(1)]
-    label_strings = unpickle(os.path.join(CIFAR_LOC,CIFAR_FOLDER, "batches.meta"))[b'label_names']
+    batches = ["data_batch_" + str(x + 1) for x in range(1)]
+    label_strings = unpickle(os.path.join(CIFAR_LOC, CIFAR_FOLDER, "batches.meta"))[
+        b"label_names"
+    ]
     images = []
     labels = []
     for batch in batches:
-        path = os.path.join(CIFAR_LOC, CIFAR_FOLDER,batch)
+        path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, batch)
         raw_dict = unpickle(path)
-        batch_images = np.reshape(raw_dict[b'data'], IMG_DIMS)
-        batch_images = np.transpose(batch_images,(0,2,3,1))        
+        batch_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
+        #This line is necessary for visualizing and rendering, as we expect channels at the back
+        batch_images = np.transpose(batch_images, (0, 2, 3, 1))
         images.append(batch_images)
         ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
         extra_images = augment(batch_images)
         images.append(extra_images)
-        labels.append(raw_dict[b'labels']) 
-    image_set = np.concatenate(images, axis=0)
-    labels=np.concatenate(images,axis=0)
+        labels.append(raw_dict[b"labels"])
+
+    #Converting to floats between 0 & 1, as a step down to float32 is required anyway.
+    images = 255 / np.concatenate(images, axis=0).astype(np.float32)
+    labels = np.concatenate(labels, axis=0)
 
     ## And now, the training
-    
+
+    BATCH_SIZE = 100
+    NUM_ITERS = 2500
+    VALIDATE = True
+    VALIDATE_SPLIT = 0.8
+    TEST = True
+    tf_rng = tf.random.get_global_generator()
+    tf_rng.reset_from_seed(42)
+    np_rng = np.random.default_rng(seed=42)
+    size = int(VALIDATE_SPLIT * labels.size)
+
+    validation_images = images[size:] 
+    validation_labels = labels[size:]
+
+    restruct_labels = restructure(labels)
+
+    ##Model for 96.3
+    model = Classifier(
+        input_dims=28,
+        input_channels=3,
+        output_dim=10,
+        pool_dims=4,
+        conv_dims=5,
+        conv_activation=tf.nn.relu,
+        num_res=4,
+        num_lin_layers=5,
+        hidden_lin_width=125,
+        lin_activation=tf.nn.leaky_relu,
+        lin_output_activation=tf.nn.softmax,
+        dropout_rate=0.2,
+    )
+
+    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    # Split training data down validate split
+    bar = trange(NUM_ITERS)
+    accuracy = 0
+
+    ##Converting batch_size to epochs
+    epochs = 0
+    total_epochs = BATCH_SIZE * NUM_ITERS / size
+
+    n_min = 0.1
+    n_max = 2
+
+    validation_data = []
+    validation_indexes = []
+    for i in bar:
+        batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
+        with tf.GradientTape() as tape:
+            batch_images = tf.cast(images[batch_indices], dtype=tf.float32)
+            # batch_images = tf.expand_dims(image_slice, axis=3)
+
+            batch_labels = restruct_labels[batch_indices, :]
+            predicted = model(batch_images, True)
+            # Cross Entropy Loss Function
+            loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
+            loss = tf.math.reduce_mean(loss)
+
+        epochs += BATCH_SIZE / size
+        ##Cosine annealing
+        n_t = n_min + (n_max - n_min) * (
+            1 + tf.math.cos(epochs * math.pi / total_epochs)
+        )
+        grads = tape.gradient(loss, model.trainable_variables)
+        optimizer.train(
+            grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
+        )
+        if i % 100 == 99:
+            # if(i % 100 == 99):
+            model_output = np.argmax(model(validation_images), axis=1)
+            accuracy = (
+                np.sum(model_output == validation_labels) / validation_labels.size
+            )
+            validation_data.append(accuracy * 100)
+            validation_indexes.append(i)
+            bar.set_description(
+                f"Step {i}; Loss => {loss.numpy():0.4f}, accuracy => {accuracy:0.3f}:"
+            )
+            bar.refresh()
+
+    model_output = np.argmax(model(validation_images), axis=1)
+    accuracy = np.sum(model_output == validation_labels) / validation_labels.size
+    print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
+
+    # fig, ax1 = plt.subplots(1, 1)
+    # if TEST:
+    #     images_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER)
+    #     labels_path = os.path.join(mnist_location, "t10k-labels-idx1-ubyte.gz")
+
+    #     images = load_data_arr(images_path).astype(np.float32)
+    #     labels = load_data_arr(labels_path)
+
+    #     images = tf.expand_dims(images, axis=3)
+    #     model_output = np.argmax(model(images), axis=1)
+    #     accuracy = np.sum(model_output == labels) / labels.size
+
+    #     print("On test set, achieved accuracy of %0.1f%%" % (100 * accuracy))
+
+    # (line,) = ax1.plot(validation_indexes, validation_data)
+    # line.set_label("Validation Data")
+    # ax1.set_xlabel("Iterations")
+    # ax1.set_ylabel("Accuracy", labelpad=10)
+    # ax1.set_title("Validation Dataset Accuracy (Percent / Iteration )")
+
+    # ax1.axhline(y=95.5, color="r", linestyle="-")
+
+    # ax1.text(ax1.get_xlim()[1] + 0.1, 95.5, f"y={95.5}")
+    # ax1.legend()
+
+    # fig.savefig("Submissions/NMIST_Validation_Graph.png")
