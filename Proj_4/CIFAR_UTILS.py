@@ -13,6 +13,8 @@ def render_img(image,path):
     plt.savefig(path)
 
 def augment(image_set: np.ndarray,render=False):
+    ##Returns number of clones (for label expansion),
+    ##as well as the modified images themselves
     mean = 0
     sigma = 3
     noise = np.random.normal(mean,sigma,image_set.shape)
@@ -32,7 +34,7 @@ def augment(image_set: np.ndarray,render=False):
         render_img(invert[0], "invert.png")
         render_img(noised[0], "noised.png")
 
-    return np.concatenate((flip_1,flip_2,invert,noised))
+    return np.concatenate((flip_1,flip_2,invert,noised)), 4
 
 # Converts 1xn labels into nx10 labels with each index representing a 0
 def restructure(labels):

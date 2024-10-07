@@ -97,8 +97,9 @@ class Classifier(tf.Module):
         self.strides = [1, pool_dims, pool_dims, 1]
         self.padding = "SAME"
 
+        perceptron_dims = (input_dims * input_dims * input_channels) // (pool_dims*pool_dims)
         self.output_perceptron = MLP(
-            num_inputs= (input_dims * input_dims * input_channels) // (pool_dims*pool_dims),
+            num_inputs= perceptron_dims,
             num_outputs=output_dim,
             num_hidden_layers=num_lin_layers,
             hidden_layer_width=hidden_lin_width,
@@ -148,9 +149,9 @@ if __name__ == "__main__":
         batch_images = np.transpose(batch_images, (0, 2, 3, 1))
         images.append(batch_images)
         ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
-        extra_images = augment(batch_images)
+        extra_images,num_clones = augment(batch_images)
         images.append(extra_images)
-        labels.append(raw_dict[b"labels"])
+        labels.append(raw_dict[b"labels"]*(num_clones+1))
 
     #Converting to floats between 0 & 1, as a step down to float32 is required anyway.
     images = 255 / np.concatenate(images, axis=0).astype(np.float32)
@@ -161,7 +162,7 @@ if __name__ == "__main__":
     BATCH_SIZE = 100
     NUM_ITERS = 2500
     VALIDATE = True
-    VALIDATE_SPLIT = 0.8
+    VALIDATE_SPLIT = 0.95
     TEST = True
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
@@ -175,7 +176,7 @@ if __name__ == "__main__":
 
     ##Model for 96.3
     model = Classifier(
-        input_dims=28,
+        input_dims=32,
         input_channels=3,
         output_dim=10,
         pool_dims=4,
@@ -201,8 +202,6 @@ if __name__ == "__main__":
     n_min = 0.1
     n_max = 2
 
-    validation_data = []
-    validation_indexes = []
     for i in bar:
         batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
@@ -224,14 +223,12 @@ if __name__ == "__main__":
         optimizer.train(
             grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
         )
-        if i % 100 == 99:
-            # if(i % 100 == 99):
-            model_output = np.argmax(model(validation_images), axis=1)
-            accuracy = (
-                np.sum(model_output == validation_labels) / validation_labels.size
-            )
-            validation_data.append(accuracy * 100)
-            validation_indexes.append(i)
+        if i % 10 == 9:
+            if(i % 100 == 99):
+                model_output = np.argmax(model(validation_images), axis=1)
+                accuracy = (
+                    np.sum(model_output == validation_labels) / validation_labels.size
+                )
             bar.set_description(
                 f"Step {i}; Loss => {loss.numpy():0.4f}, accuracy => {accuracy:0.3f}:"
             )
