@@ -42,33 +42,31 @@ class ResidualBlock(tf.Module):
         groups,
         activation=tf.nn.relu,
         dropout_rate=0.2,
-        layers_between=2,
-        in_channel=3,
-        out_channel=3
+        in_channels = 3,
+        out_channels = 3,
+        num_layers = 2,
         ):
-        self.res_kernel = [dim,dim,in_channel,out_channel]
+        self.num_layers = num_layers
+        self.input_conv = Conv2d(dim=1,in_channel=in_channels,out_channel=out_channels)
         self.GNs = []
         self.convs = []
-        for layer in range(layers_between):
+        #Start from second element
+        for layer in range(num_layers):
+            self.GNs.append(GroupNorm(groups=groups, channels=out_channels))
             self.convs.append(
-                Conv2d(dim=dim, in_channel=in_channel, out_channel=out_channel, dropout_rate=dropout_rate)
+                Conv2d(dim=dim, in_channel=out_channels, out_channel=out_channels, dropout_rate=dropout_rate)
             )
-            self.GNs.append(GroupNorm(groups=groups, channels=in_channel))
 
         self.activation = activation
 
     def __call__(self, input, dropout=False):
         ##Using this to prevent soft copying
-        intermediate = tf.identity(input)
-
-
-        for layer, gn in (self.convs, self.GNs):
-            intermediate = gn(intermediate)
+        input = self.input_conv(input)
+        intermediate = input
+        for i in range(self.num_layers):
+            intermediate = self.GNs[i](intermediate)
             intermediate = self.activation(intermediate)
-            intermediate = layer(intermediate, dropout)
-
-        ##Upsampling, to allow for differently shaped convolutional layers            
-        input = tf.nn.conv2d(input,self.res_kernel,strides=1,padding="SAME")
+            intermediate = self.convs[i](intermediate, dropout)
 
         return input + intermediate
 
@@ -81,7 +79,7 @@ class Classifier(tf.Module):
         pool_dims=1,
         conv_dims=5,
         num_lin_layers=5,
-        batch_norm_groups=3,
+        batch_norm_groups=[3,3,3,3,3],
         hidden_lin_width=125,
         conv_activation=tf.identity,
         lin_activation=tf.identity,
@@ -94,13 +92,14 @@ class Classifier(tf.Module):
         self.input_dims = input_dims
         self.res_layers = []
 
-        for res_layer in range(0, channel_scales-1):
+        for res_layer in range(0, len(channel_scales)-1):
             self.res_layers.append(
                 ResidualBlock(
                     dim=conv_dims,
-                    in_channel=channel_scales[res_layer],
-                    out_channel=channel_scales[res_layer+1],
-                    groups=batch_norm_groups,
+                    in_channels=channel_scales[res_layer],
+                    out_channels=channel_scales[res_layer+1],
+                    num_layers=2,
+                    groups=batch_norm_groups[res_layer+1],
                     activation=conv_activation,
                     dropout_rate=dropout_rate,
                 )
@@ -152,7 +151,7 @@ if __name__ == "__main__":
     CIFAR_FOLDER = "cifar-10-batches-py"
     IMG_DIMS = (-1, 3, 32, 32)
 
-    batches = ["data_batch_" + str(x + 1) for x in range(4)]
+    batches = ["data_batch_" + str(x + 1) for x in range(2)]
     label_strings = unpickle(os.path.join(CIFAR_LOC, CIFAR_FOLDER, "batches.meta"))[
         b"label_names"
     ]
@@ -186,8 +185,8 @@ if __name__ == "__main__":
 
 
 
-    BATCH_SIZE = 250
-    NUM_ITERS = 10000
+    BATCH_SIZE = 100
+    NUM_ITERS = 500
     VALIDATE = True
     VALIDATE_SPLIT=1
     # VALIDATE_SPLIT = 0.95
@@ -218,10 +217,11 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.2,
-        channel_scales=[3,15,30,15]
+        batch_norm_groups=[3,5,16,16,2],
+        channel_scales=[3,15,32,64,2]
     )
 
-    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    optimizer = Adam(size=len(model.trainable_variables), step_size=3e-4)
     # Split training data down validate split
     bar = trange(NUM_ITERS)
     accuracy = 0
@@ -254,8 +254,8 @@ if __name__ == "__main__":
         optimizer.train(
             grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
         )
-        if i % 10 == 0:
-            if(i % 500 == 0):
+        if i % 10 == 9:
+            if(i % 100 == 9):
                 ##Mini validation to see performance
                 model_output = np.argmax(model(validation_images[:validation_labels.size//5]), axis=1)
                 accuracy = (
