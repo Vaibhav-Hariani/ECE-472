@@ -39,27 +39,37 @@ class ResidualBlock(tf.Module):
     def __init__(
         self,
         dim,
-        channels,
         groups,
         activation=tf.nn.relu,
         dropout_rate=0.2,
         layers_between=2,
-    ):
-        self.GN = GroupNorm(groups=groups, channels=channels)
+        in_channel=3,
+        out_channel=3
+        ):
+        self.res_kernel = [dim,dim,in_channel,out_channel]
+        self.GNs = []
         self.convs = []
         for layer in range(layers_between):
             self.convs.append(
-                Conv2d(dim=dim, in_channel=3, out_channel=3, dropout_rate=dropout_rate)
+                Conv2d(dim=dim, in_channel=in_channel, out_channel=out_channel, dropout_rate=dropout_rate)
             )
+            self.GNs.append(GroupNorm(groups=groups, channels=in_channel))
+
         self.activation = activation
 
     def __call__(self, input, dropout=False):
         ##Using this to prevent soft copying
         intermediate = tf.identity(input)
-        for layer in self.convs:
-            intermediate = self.GN(intermediate)
+
+
+        for layer, gn in (self.convs, self.GNs):
+            intermediate = gn(intermediate)
             intermediate = self.activation(intermediate)
             intermediate = layer(intermediate, dropout)
+
+        ##Upsampling, to allow for differently shaped convolutional layers            
+        input = tf.nn.conv2d(input,self.res_kernel,strides=1,padding="SAME")
+
         return input + intermediate
 
 
@@ -67,11 +77,9 @@ class Classifier(tf.Module):
     def __init__(
         self,
         input_dims,
-        input_channels,
         output_dim,
         pool_dims=1,
         conv_dims=5,
-        num_res=4,
         num_lin_layers=5,
         batch_norm_groups=3,
         hidden_lin_width=125,
@@ -79,15 +87,19 @@ class Classifier(tf.Module):
         lin_activation=tf.identity,
         lin_output_activation=tf.identity,
         dropout_rate=0.1,
+        channel_scales = [3,3,3,3,3]
     ):
+    #Channel scales represents how the channels shift throughout
+    #This encodes the input channel, all the way up to the output channel
         self.input_dims = input_dims
         self.res_layers = []
 
-        for res_layer in range(0, num_res):
+        for res_layer in range(0, channel_scales-1):
             self.res_layers.append(
                 ResidualBlock(
                     dim=conv_dims,
-                    channels=input_channels,
+                    in_channel=channel_scales[res_layer],
+                    out_channel=channel_scales[res_layer+1],
                     groups=batch_norm_groups,
                     activation=conv_activation,
                     dropout_rate=dropout_rate,
@@ -97,7 +109,7 @@ class Classifier(tf.Module):
         self.strides = [1, pool_dims, pool_dims, 1]
         self.padding = "SAME"
 
-        perceptron_dims = (input_dims * input_dims * input_channels) // (pool_dims*pool_dims)
+        perceptron_dims = (input_dims * input_dims * channel_scales[-1]) // (pool_dims*pool_dims)
         self.output_perceptron = MLP(
             num_inputs= perceptron_dims,
             num_outputs=output_dim,
@@ -197,17 +209,16 @@ if __name__ == "__main__":
     
     model = Classifier(
         input_dims=32,
-        input_channels=3,
         output_dim=10,
         pool_dims=4,
         conv_dims=5,
         conv_activation=tf.nn.relu,
-        num_res=4,
         num_lin_layers=5,
         hidden_lin_width=125,
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.2,
+        channel_scales=[3,15,30,15]
     )
 
     optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
