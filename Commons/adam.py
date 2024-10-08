@@ -10,8 +10,8 @@ class Adam:
         beta_1=0.9,
         beta_2=0.999,
         step_size=0.001,
-        epsilon=1e-8,
-        w=0.0005,
+        epsilon=1e-7,
+        w=0.004,
     ):
         self.beta_1 = beta_1
         self.beta_2 = beta_2

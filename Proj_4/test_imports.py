@@ -71,10 +71,10 @@ class Classifier(tf.Module):
         output_dim,
         pool_dims=1,
         conv_dims=5,
-        num_res=4,
-        num_lin_layers=5,
+        num_res=10,
+        num_lin_layers=10,
         batch_norm_groups=3,
-        hidden_lin_width=125,
+        hidden_lin_width=250,
         conv_activation=tf.identity,
         lin_activation=tf.identity,
         lin_output_activation=tf.identity,
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     import os
     import numpy as np
     from CIFAR_UTILS import unpickle, augment, restructure
-    from tqdm import trange
+    # from tqdm import trange
 
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
@@ -147,9 +147,9 @@ if __name__ == "__main__":
     images = []
     labels = []
     for batch in batches:
+        print("Loading Batch " + batch)
         path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, batch)
         raw_dict = unpickle(path)
-        print("Opening batch " + batch)
         batch_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
         #This line is necessary for visualizing and rendering, as we expect channels at the back
         batch_images = np.transpose(batch_images, (0, 2, 3,  1))
@@ -160,7 +160,7 @@ if __name__ == "__main__":
         ##Shuffling so that validation set is representative
         images.append(extra_images)
         labels.append(raw_dict[b"labels"]*(num_clones+1))
-
+    print("Loaded Data")
     images = np.concatenate(images, axis=0)
     ##shuffling with a seed to 
     labels = np.concatenate(labels, axis=0)
@@ -174,8 +174,8 @@ if __name__ == "__main__":
 
 
 
-    BATCH_SIZE = 250
-    NUM_ITERS = 10000
+    BATCH_SIZE = 100
+    NUM_ITERS = 50000
     VALIDATE = True
     VALIDATE_SPLIT=1
     # VALIDATE_SPLIT = 0.95
@@ -193,8 +193,7 @@ if __name__ == "__main__":
 
     restruct_labels = restructure(labels)
 
-    print("Making Model")
-    
+    ##Model for 96.3
     model = Classifier(
         input_dims=32,
         input_channels=3,
@@ -212,7 +211,7 @@ if __name__ == "__main__":
 
     optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
     # Split training data down validate split
-    bar = trange(NUM_ITERS)
+    # bar = trange(NUM_ITERS)
     accuracy = 0
 
     ##Converting batch_size to epochs
@@ -221,62 +220,10 @@ if __name__ == "__main__":
 
     n_min = 0.1
     n_max = 2
+    print("Beginning Training")
 
-    for i in bar:
-        batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
-        with tf.GradientTape() as tape:
-            batch_images = tf.cast(images[batch_indices], dtype=tf.float32)
-            # batch_images = tf.expand_dims(image_slice, axis=3)
-
-            batch_labels = restruct_labels[batch_indices, :]
-            predicted = model(batch_images, True)
-            # Cross Entropy Loss Function
-            loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
-            loss = tf.math.reduce_mean(loss)
-
-        epochs += BATCH_SIZE / size
-        ##Cosine annealing
-        n_t = n_min + (n_max - n_min) * (
-            1 + tf.math.cos(epochs * math.pi / total_epochs)
-        )
-        grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.train(
-            grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
-        )
-        if i % 10 == 0:
-            if(i % 500 == 0):
-                ##Mini validation to see performance
-                model_output = np.argmax(model(validation_images[:validation_labels.size//5]), axis=1)
-                accuracy = (
-                    np.sum(model_output == validation_labels[:validation_labels.size//5]) / (validation_labels.size//5)
-                )
-                print(f"Step {i}; Loss => {loss.numpy():0.4f}, sample accuracy => {accuracy:0.3f}:")
-            bar.set_description(
-                f"Step {i}; Loss => {loss.numpy():0.4f}, sample accuracy => {accuracy:0.3f}:"
-            )
-            bar.refresh()
-
-    # model_output = np.argmax(model(validation_images), axis=1)
-    # accuracy = np.sum(model_output == validation_labels) / validation_labels.size
-    # print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
     model_output = np.argmax(model(validation_images), axis=1)
     accuracy = (
         np.sum(model_output == validation_labels) / validation_labels.size
     )    
-    print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
-
-
-    # fig, ax1 = plt.subplots(1, 1)
-    if TEST:
-        dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "test_batch")
-        raw_dict = unpickle(path)
-        test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
-        #This line is necessary for visualizing and rendering, as we expect channels at the back
-        test_images= np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
-        # ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
-        # extra_images,num_clones = augment(batch_images)
-        test_labels = np.array(raw_dict[b"labels"])
-        model_output = np.argmax(model(test_images), axis=1)
-        accuracy = (np.sum(model_output == test_labels) / test_labels.size)
-        print("On test set, achieved accuracy of %0.1f%%" % (100 * accuracy))
-
+    print("On validation set, achieved untrained accuracy of %.1f%%" % (100 * accuracy))
