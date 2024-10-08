@@ -173,15 +173,15 @@ if __name__ == "__main__":
         labels.append(raw_dict[b"labels"]*(num_clones+1))
 
     images = np.concatenate(images, axis=0)
-    ##shuffling with a seed to 
     labels = np.concatenate(labels, axis=0)
 
+    ##Shuffling them & generating a set of labelled images.
     # randomize = np.arange(len(labels))
     # np_rng.shuffle(randomize)
-
-    # ##Shuffling them to create a reflective validation set.
     # images = images[randomize]
     # labels = labels[randomize]
+    # for i in range(7):
+    #     render_img(image=images[i],path=str(i), label=label_strings[labels[i]])
 
 
 
