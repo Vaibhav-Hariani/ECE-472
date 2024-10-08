@@ -140,7 +140,7 @@ if __name__ == "__main__":
     CIFAR_FOLDER = "cifar-10-batches-py"
     IMG_DIMS = (-1, 3, 32, 32)
 
-    batches = ["data_batch_" + str(x + 1) for x in range(1)]
+    batches = ["data_batch_" + str(x + 1) for x in range(4)]
     label_strings = unpickle(os.path.join(CIFAR_LOC, CIFAR_FOLDER, "batches.meta"))[
         b"label_names"
     ]
@@ -151,13 +151,12 @@ if __name__ == "__main__":
         raw_dict = unpickle(path)
         batch_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
         #This line is necessary for visualizing and rendering, as we expect channels at the back
-        batch_images = np.transpose(batch_images, (0, 2, 3, 1))
+        batch_images = np.transpose(batch_images, (0, 2, 3,  1))
         images.append(batch_images)
         ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
+        num_clones=0
         extra_images,num_clones = augment(batch_images)
-
         ##Shuffling so that validation set is representative
-
         images.append(extra_images)
         labels.append(raw_dict[b"labels"]*(num_clones+1))
 
@@ -165,27 +164,31 @@ if __name__ == "__main__":
     ##shuffling with a seed to 
     labels = np.concatenate(labels, axis=0)
 
-    randomize = np.arange(len(labels))
-    np_rng.shuffle(randomize)
+    # randomize = np.arange(len(labels))
+    # np_rng.shuffle(randomize)
 
-    ##Shuffling them to create a reflective validation set.
-    images = images[randomize]
-    labels = labels[randomize]
+    # ##Shuffling them to create a reflective validation set.
+    # images = images[randomize]
+    # labels = labels[randomize]
 
 
 
-    BATCH_SIZE = 30
-    NUM_ITERS = 2500
+    BATCH_SIZE = 100
+    NUM_ITERS = 5000
     VALIDATE = True
-    VALIDATE_SPLIT = 0.95
+    VALIDATE_SPLIT=1
+    # VALIDATE_SPLIT = 0.95
     TEST = True
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
     size = int(labels.size * VALIDATE_SPLIT)
 
-    validation_images = tf.cast(images[size:], tf.float32) 
-    validation_labels = labels[size:]
+    dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "data_batch_5")
+    raw_dict = unpickle(path)
+    test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
+    validation_images= np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
+    validation_labels = np.array(raw_dict[b"labels"])
 
     restruct_labels = restructure(labels)
 
@@ -205,7 +208,7 @@ if __name__ == "__main__":
         dropout_rate=0.2,
     )
 
-    optimizer = Adam(size=len(model.trainable_variables), step_size=0.002)
+    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
     # Split training data down validate split
     bar = trange(NUM_ITERS)
     accuracy = 0
@@ -240,9 +243,10 @@ if __name__ == "__main__":
         )
         if i % 10 == 9:
             if(i % 100 == 99):
-                model_output = np.argmax(model(validation_images), axis=1)
+                ##Mini validation to see performance
+                model_output = np.argmax(model(validation_images[:validation_labels.size//5]), axis=1)
                 accuracy = (
-                    np.sum(model_output == validation_labels) / validation_labels.size
+                    np.sum(model_output == validation_labels[:validation_labels.size//5]) / (validation_labels.size//5)
                 )
             bar.set_description(
                 f"Step {i}; Loss => {loss.numpy():0.4f}, sample accuracy => {accuracy:0.3f}:"
@@ -252,29 +256,24 @@ if __name__ == "__main__":
     # model_output = np.argmax(model(validation_images), axis=1)
     # accuracy = np.sum(model_output == validation_labels) / validation_labels.size
     # print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
+    model_output = np.argmax(model(validation_images), axis=1)
+    accuracy = (
+        np.sum(model_output == validation_labels) / validation_labels.size
+    )    
+    print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
+
 
     # fig, ax1 = plt.subplots(1, 1)
     if TEST:
         dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "test_batch")
         raw_dict = unpickle(path)
-        batch_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
+        test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
         #This line is necessary for visualizing and rendering, as we expect channels at the back
-        batch_images = np.transpose(batch_images, (0, 2, 3, 1))
-        images.append(batch_images)
-        ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
-        extra_images,num_clones = augment(batch_images)
+        test_images= np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
+        # ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
+        # extra_images,num_clones = augment(batch_images)
+        test_labels = np.array(raw_dict[b"labels"])
+        model_output = np.argmax(model(test_images), axis=1)
+        accuracy = (np.sum(model_output == test_labels) / test_labels.size)
+        print("On test set, achieved accuracy of %0.1f%%" % (100 * accuracy))
 
-        ##Shuffling so that validation set is representative
-        images = np.concatenate()
-
-        images.append(extra_images)
-        labels.append(raw_dict[b"labels"]*(num_clones+1))
-
-    images = np.concatenate(images, axis=0)
-    ##shuffling with a seed to 
-    # ax1.axhline(y=95.5, color="r", linestyle="-")
-
-    # ax1.text(ax1.get_xlim()[1] + 0.1, 95.5, f"y={95.5}")
-    # ax1.legend()
-
-    # fig.savefig("Submissions/NMIST_Validation_Graph.png")
