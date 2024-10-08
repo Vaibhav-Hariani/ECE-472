@@ -130,6 +130,11 @@ if __name__ == "__main__":
     from CIFAR_UTILS import unpickle, augment, restructure
     from tqdm import trange
 
+    tf_rng = tf.random.get_global_generator()
+    tf_rng.reset_from_seed(42)
+    np_rng = np.random.default_rng(seed=42)
+
+
     # Getting training data from local CIFAR
     CIFAR_LOC = "CIFAR"
     CIFAR_FOLDER = "cifar-10-batches-py"
@@ -150,16 +155,26 @@ if __name__ == "__main__":
         images.append(batch_images)
         ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
         extra_images,num_clones = augment(batch_images)
+
+        ##Shuffling so that validation set is representative
+
         images.append(extra_images)
         labels.append(raw_dict[b"labels"]*(num_clones+1))
 
-    #Converting to floats between 0 & 1, as a step down to float32 is required anyway.
-    images = 255 / np.concatenate(images, axis=0).astype(np.float32)
+    images = np.concatenate(images, axis=0)
+    ##shuffling with a seed to 
     labels = np.concatenate(labels, axis=0)
 
-    ## And now, the training
+    randomize = np.arange(len(labels))
+    np_rng.shuffle(randomize)
 
-    BATCH_SIZE = 100
+    ##Shuffling them to create a reflective validation set.
+    images = images[randomize]
+    labels = labels[randomize]
+
+
+
+    BATCH_SIZE = 30
     NUM_ITERS = 2500
     VALIDATE = True
     VALIDATE_SPLIT = 0.95
@@ -167,9 +182,9 @@ if __name__ == "__main__":
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
-    size = int(VALIDATE_SPLIT * labels.size)
+    size = int(labels.size * VALIDATE_SPLIT)
 
-    validation_images = images[size:] 
+    validation_images = tf.cast(images[size:], tf.float32) 
     validation_labels = labels[size:]
 
     restruct_labels = restructure(labels)
@@ -190,7 +205,7 @@ if __name__ == "__main__":
         dropout_rate=0.2,
     )
 
-    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    optimizer = Adam(size=len(model.trainable_variables), step_size=0.002)
     # Split training data down validate split
     bar = trange(NUM_ITERS)
     accuracy = 0
@@ -230,34 +245,33 @@ if __name__ == "__main__":
                     np.sum(model_output == validation_labels) / validation_labels.size
                 )
             bar.set_description(
-                f"Step {i}; Loss => {loss.numpy():0.4f}, accuracy => {accuracy:0.3f}:"
+                f"Step {i}; Loss => {loss.numpy():0.4f}, sample accuracy => {accuracy:0.3f}:"
             )
             bar.refresh()
 
-    model_output = np.argmax(model(validation_images), axis=1)
-    accuracy = np.sum(model_output == validation_labels) / validation_labels.size
-    print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
+    # model_output = np.argmax(model(validation_images), axis=1)
+    # accuracy = np.sum(model_output == validation_labels) / validation_labels.size
+    # print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
 
     # fig, ax1 = plt.subplots(1, 1)
-    # if TEST:
-    #     images_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER)
-    #     labels_path = os.path.join(mnist_location, "t10k-labels-idx1-ubyte.gz")
+    if TEST:
+        dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "test_batch")
+        raw_dict = unpickle(path)
+        batch_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
+        #This line is necessary for visualizing and rendering, as we expect channels at the back
+        batch_images = np.transpose(batch_images, (0, 2, 3, 1))
+        images.append(batch_images)
+        ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
+        extra_images,num_clones = augment(batch_images)
 
-    #     images = load_data_arr(images_path).astype(np.float32)
-    #     labels = load_data_arr(labels_path)
+        ##Shuffling so that validation set is representative
+        images = np.concatenate()
 
-    #     images = tf.expand_dims(images, axis=3)
-    #     model_output = np.argmax(model(images), axis=1)
-    #     accuracy = np.sum(model_output == labels) / labels.size
+        images.append(extra_images)
+        labels.append(raw_dict[b"labels"]*(num_clones+1))
 
-    #     print("On test set, achieved accuracy of %0.1f%%" % (100 * accuracy))
-
-    # (line,) = ax1.plot(validation_indexes, validation_data)
-    # line.set_label("Validation Data")
-    # ax1.set_xlabel("Iterations")
-    # ax1.set_ylabel("Accuracy", labelpad=10)
-    # ax1.set_title("Validation Dataset Accuracy (Percent / Iteration )")
-
+    images = np.concatenate(images, axis=0)
+    ##shuffling with a seed to 
     # ax1.axhline(y=95.5, color="r", linestyle="-")
 
     # ax1.text(ax1.get_xlim()[1] + 0.1, 95.5, f"y={95.5}")
