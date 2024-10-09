@@ -79,7 +79,7 @@ class Classifier(tf.Module):
         pool_dims=1,
         conv_dims=5,
         num_lin_layers=5,
-        batch_norm_groups=[3,3,3,3,3],
+        group_sizes=[3,3,3,3,3],
         hidden_lin_width=125,
         conv_activation=tf.identity,
         lin_activation=tf.identity,
@@ -99,7 +99,7 @@ class Classifier(tf.Module):
                     in_channels=channel_scales[res_layer],
                     out_channels=channel_scales[res_layer+1],
                     num_layers=2,
-                    groups=batch_norm_groups[res_layer+1],
+                    groups=group_sizes[res_layer+1],
                     activation=conv_activation,
                     dropout_rate=dropout_rate,
                 )
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     CIFAR_FOLDER = "cifar-10-batches-py"
     IMG_DIMS = (-1, 3, 32, 32)
 
-    batches = ["data_batch_" + str(x + 1) for x in range(2)]
+    batches = ["data_batch_" + str(x + 1) for x in range(4)]
     label_strings = unpickle(os.path.join(CIFAR_LOC, CIFAR_FOLDER, "batches.meta"))[
         b"label_names"
     ]
@@ -172,37 +172,48 @@ if __name__ == "__main__":
         images.append(extra_images)
         labels.append(raw_dict[b"labels"]*(num_clones+1))
 
+
+    VALIDATE = True
+    VALIDATE_SPLIT=0.95
+    TEST = True
+    ##Creating validation set out of a slice of the last batch: This is 500 images.
+    dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "data_batch_5")
+    raw_dict = unpickle(path)
+    test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
+    split_len = int(len(raw_dict[b'labels'])*VALIDATE_SPLIT)
+    batch_5_labels = raw_dict[b"labels"]
+    batch_5_imgs = np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
+
+    images.append(batch_5_imgs[:split_len])
+    extra_images,num_clones = augment(batch_5_imgs[:split_len])
+    images.append(extra_images)
+    labels.append(batch_5_labels[:split_len]*(num_clones+1))
+
     images = np.concatenate(images, axis=0)
     labels = np.concatenate(labels, axis=0)
+    restruct_labels = restructure(labels)
 
-    ##Shuffling them & generating a set of labelled images.
-    # randomize = np.arange(len(labels))
-    # np_rng.shuffle(randomize)
-    # images = images[randomize]
-    # labels = labels[randomize]
-    # for i in range(7):
+    validation_images = batch_5_imgs[split_len:]
+    validation_labels = np.array(batch_5_labels)[split_len:]
+
+
+    # ##generating a set of labelled images.
+    # k = 5
+    # indexes = np.random.randint(0, labels.size, k)
+    # image_slice = images[indexes]
+    # label_slice = labels[indexes]
+    # for i in range(k):
     #     render_img(image=images[i],path=str(i), label=label_strings[labels[i]])
 
 
 
-    BATCH_SIZE = 100
-    NUM_ITERS = 500
-    VALIDATE = True
-    VALIDATE_SPLIT=1
-    # VALIDATE_SPLIT = 0.95
-    TEST = True
+
+    BATCH_SIZE = 150
+    NUM_ITERS = 1000
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
     size = int(labels.size * VALIDATE_SPLIT)
-
-    dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "data_batch_5")
-    raw_dict = unpickle(path)
-    test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
-    validation_images= np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
-    validation_labels = np.array(raw_dict[b"labels"])
-
-    restruct_labels = restructure(labels)
 
     print("Making Model")
     
@@ -216,23 +227,24 @@ if __name__ == "__main__":
         hidden_lin_width=125,
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
-        dropout_rate=0.2,
-        batch_norm_groups=[3,5,16,16,2],
-        channel_scales=[3,15,32,64,2]
+        dropout_rate=0.1,
+        group_sizes=[3,5,8,32,4],
+        channel_scales=[3,15,32,64,4]
     )
 
     optimizer = Adam(size=len(model.trainable_variables), step_size=3e-4)
-    # Split training data down validate split
-    bar = trange(NUM_ITERS)
-    accuracy = 0
+
 
     ##Converting batch_size to epochs
     epochs = 0
     total_epochs = BATCH_SIZE * NUM_ITERS / size
 
+    print("Running for %0.4f epochs" % total_epochs)
     n_min = 0.1
     n_max = 2
 
+
+    bar = trange(NUM_ITERS)
     for i in bar:
         batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
@@ -254,16 +266,14 @@ if __name__ == "__main__":
         optimizer.train(
             grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
         )
-        if i % 10 == 9:
-            if(i % 100 == 9):
-                ##Mini validation to see performance
-                model_output = np.argmax(model(validation_images[:validation_labels.size//5]), axis=1)
-                accuracy = (
-                    np.sum(model_output == validation_labels[:validation_labels.size//5]) / (validation_labels.size//5)
-                )
-                print(f"Step {i}; Loss => {loss.numpy():0.4f}, sample accuracy => {accuracy:0.3f}:")
+        if(i % 250 == 0):
+            ##Mini validation to see performance
+            model_output = np.argmax(model(validation_images), axis=1)
+            accuracy = (
+                np.sum(model_output == validation_labels) / (validation_labels.size)
+            )
             bar.set_description(
-                f"Step {i}; Loss => {loss.numpy():0.4f}, sample accuracy => {accuracy:0.3f}:"
+                f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}, accuracy => {accuracy:0.3f}:"
             )
             bar.refresh()
 
