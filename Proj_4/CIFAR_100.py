@@ -227,11 +227,11 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.0,
-        group_sizes=[1, 15, 15, 32, 32, 32, 32, 32, 16, 3, 3, 1],
-        channel_scales=[3, 15, 15, 32, 64, 32, 32, 32, 16, 3, 3, 1],
+        group_sizes= [3,5,8,16,32,3,1],
+        channel_scales=[3,5,16,32,64,3,1],
     )
 
-    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    optimizer = tf.optimizers.AdamW(learning_rate=0.001)
 
     ##Converting batch_size to epochs
     epochs = 0
@@ -260,9 +260,7 @@ if __name__ == "__main__":
             1 + tf.math.cos(epochs * math.pi / total_epochs)
         )
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.train(
-            grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
-        )
+        optimizer.apply_gradients(zip(grads,model.trainable_variables))
         if i % 3 == 0:
             if i % 240 == 0:
                 ##Mini validation to see performance

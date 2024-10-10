@@ -234,7 +234,7 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.0,
-        group_sizes=   [3,5,8,16,32,3,1],
+        group_sizes= [3,5,8,16,32,3,1],
         channel_scales=[3,5,16,32,64,3,1],
     )
 
