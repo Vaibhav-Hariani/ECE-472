@@ -17,7 +17,7 @@ class GroupNorm(tf.Module):
             name="GN/gamma",
         )
         self.beta = tf.Variable(
-            rng.normal(shape=[1, 1, 1,channels], stddev=stddev),
+            rng.normal(shape=[1, 1, 1, channels], stddev=stddev),
             trainable=True,
             name="GN/beta",
         )
@@ -42,19 +42,26 @@ class ResidualBlock(tf.Module):
         groups,
         activation=tf.nn.relu,
         dropout_rate=0.2,
-        in_channels = 3,
-        out_channels = 3,
-        num_layers = 2,
-        ):
+        in_channels=3,
+        out_channels=3,
+        num_layers=2,
+    ):
         self.num_layers = num_layers
-        self.input_conv = Conv2d(dim=1,in_channel=in_channels,out_channel=out_channels)
+        self.input_conv = Conv2d(
+            dim=1, in_channel=in_channels, out_channel=out_channels
+        )
         self.GNs = []
         self.convs = []
-        #Start from second element
+        # Start from second element
         for layer in range(num_layers):
             self.GNs.append(GroupNorm(groups=groups, channels=out_channels))
             self.convs.append(
-                Conv2d(dim=dim, in_channel=out_channels, out_channel=out_channels, dropout_rate=dropout_rate)
+                Conv2d(
+                    dim=dim,
+                    in_channel=out_channels,
+                    out_channel=out_channels,
+                    dropout_rate=dropout_rate,
+                )
             )
 
         self.activation = activation
@@ -79,27 +86,27 @@ class Classifier(tf.Module):
         pool_dims=1,
         conv_dims=5,
         num_lin_layers=5,
-        group_sizes=[3,3,3,3,3],
+        group_sizes=[3, 3, 3, 3, 3],
         hidden_lin_width=125,
         conv_activation=tf.identity,
         lin_activation=tf.identity,
         lin_output_activation=tf.identity,
         dropout_rate=0.1,
-        channel_scales = [3,3,3,3,3]
+        channel_scales=[3, 3, 3, 3, 3],
     ):
-    #Channel scales represents how the channels shift throughout
-    #This encodes the input channel, all the way up to the output channel
+        # Channel scales represents how the channels shift throughout
+        # This encodes the input channel, all the way up to the output channel
         self.input_dims = input_dims
         self.res_layers = []
 
-        for res_layer in range(0, len(channel_scales)-1):
+        for res_layer in range(0, len(channel_scales) - 1):
             self.res_layers.append(
                 ResidualBlock(
                     dim=conv_dims,
                     in_channels=channel_scales[res_layer],
-                    out_channels=channel_scales[res_layer+1],
+                    out_channels=channel_scales[res_layer + 1],
                     num_layers=2,
-                    groups=group_sizes[res_layer+1],
+                    groups=group_sizes[res_layer + 1],
                     activation=conv_activation,
                     dropout_rate=dropout_rate,
                 )
@@ -107,9 +114,11 @@ class Classifier(tf.Module):
         self.pool_dims = pool_dims
         self.padding = "SAME"
 
-        perceptron_dims = (input_dims * input_dims * channel_scales[-1]) // (pool_dims*pool_dims)
+        perceptron_dims = (input_dims * input_dims * channel_scales[-1]) // (
+            pool_dims * pool_dims
+        )
         self.output_perceptron = MLP(
-            num_inputs= perceptron_dims,
+            num_inputs=perceptron_dims,
             num_outputs=output_dim,
             num_hidden_layers=num_lin_layers,
             hidden_layer_width=hidden_lin_width,
@@ -142,7 +151,6 @@ if __name__ == "__main__":
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
 
-
     # Getting training data from local CIFAR
     CIFAR_LOC = "CIFAR"
     CIFAR_FOLDER = "cifar-10-batches-py"
@@ -159,33 +167,32 @@ if __name__ == "__main__":
         raw_dict = unpickle(path)
         print("Opening batch " + batch)
         batch_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
-        #This line is necessary for visualizing and rendering, as we expect channels at the back
-        batch_images = np.transpose(batch_images, (0, 2, 3,  1))
+        # This line is necessary for visualizing and rendering, as we expect channels at the back
+        batch_images = np.transpose(batch_images, (0, 2, 3, 1))
         images.append(batch_images)
         ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
-        num_clones=0
-        extra_images,num_clones = augment(batch_images)
+        num_clones = 0
+        extra_images, num_clones = augment(batch_images)
         ##Shuffling so that validation set is representative
         images.append(extra_images)
-        labels.append(raw_dict[b"labels"]*(num_clones+1))
-
+        labels.append(raw_dict[b"labels"] * (num_clones + 1))
 
     VALIDATE = True
-    VALIDATE_SPLIT=0.95
+    VALIDATE_SPLIT = 0.95
     TEST = True
 
     ##Creating validation set out of a slice of the last batch: This is 500 images.
     dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "data_batch_5")
     raw_dict = unpickle(path)
     test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
-    split_len = int(len(raw_dict[b'labels'])*VALIDATE_SPLIT)
+    split_len = int(len(raw_dict[b"labels"]) * VALIDATE_SPLIT)
     batch_5_labels = raw_dict[b"labels"]
     batch_5_imgs = np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
 
     images.append(batch_5_imgs[:split_len])
-    extra_images,num_clones = augment(batch_5_imgs[:split_len])
+    extra_images, num_clones = augment(batch_5_imgs[:split_len])
     images.append(extra_images)
-    labels.append(batch_5_labels[:split_len]*(num_clones+1))
+    labels.append(batch_5_labels[:split_len] * (num_clones + 1))
 
     images = np.concatenate(images, axis=0)
     labels = np.concatenate(labels, axis=0)
@@ -193,7 +200,6 @@ if __name__ == "__main__":
 
     validation_images = batch_5_imgs[split_len:]
     validation_labels = np.array(batch_5_labels)[split_len:]
-
 
     # ##generating a set of labelled images.
     # k = 5
@@ -203,9 +209,6 @@ if __name__ == "__main__":
     # for i in range(k):
     #     render_img(image=images[i],path=str(i), label=label_strings[labels[i]])
 
-
-
-
     BATCH_SIZE = 128
     NUM_ITERS = 40000
     tf_rng = tf.random.get_global_generator()
@@ -214,7 +217,7 @@ if __name__ == "__main__":
     size = int(labels.size * VALIDATE_SPLIT)
 
     print("Making Model")
-    
+
     model = Classifier(
         input_dims=32,
         output_dim=10,
@@ -226,12 +229,11 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.0,
-        group_sizes=[1,15,15,32,32,32,32,32,16,3,3,1],
-        channel_scales=[3,15,15,32,64,32,32,32,16,3,3,1]
+        group_sizes=[1, 15, 15, 32, 32, 32, 32, 32, 16, 3, 3, 1],
+        channel_scales=[3, 15, 15, 32, 64, 32, 32, 32, 16, 3, 3, 1],
     )
 
-    optimizer = Adam(size=len(model.trainable_variables), step_size=.001)
-
+    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
 
     ##Converting batch_size to epochs
     epochs = 0
@@ -240,7 +242,6 @@ if __name__ == "__main__":
     print("Running for %0.4f epochs" % total_epochs)
     n_min = 0.1
     n_max = 2
-
 
     bar = trange(NUM_ITERS)
     for i in bar:
@@ -264,12 +265,12 @@ if __name__ == "__main__":
         optimizer.train(
             grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
         )
-        if(i % 3 == 0):
-            if(i % 240 == 0):
+        if i % 3 == 0:
+            if i % 240 == 0:
                 ##Mini validation to see performance
                 model_output = np.argmax(model(validation_images), axis=1)
-                accuracy = (
-                    np.sum(model_output == validation_labels) / (validation_labels.size)
+                accuracy = np.sum(model_output == validation_labels) / (
+                    validation_labels.size
                 )
             bar.set_description(
                 f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}, accuracy => {accuracy:0.3f}:"
@@ -280,23 +281,19 @@ if __name__ == "__main__":
     # accuracy = np.sum(model_output == validation_labels) / validation_labels.size
     # print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
     model_output = np.argmax(model(validation_images), axis=1)
-    accuracy = (
-        np.sum(model_output == validation_labels) / validation_labels.size
-    )    
+    accuracy = np.sum(model_output == validation_labels) / validation_labels.size
     print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
-
 
     # fig, ax1 = plt.subplots(1, 1)
     if TEST:
         dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "test_batch")
         raw_dict = unpickle(path)
         test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
-        #This line is necessary for visualizing and rendering, as we expect channels at the back
-        test_images= np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
+        # This line is necessary for visualizing and rendering, as we expect channels at the back
+        test_images = np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
         # ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
         # extra_images,num_clones = augment(batch_images)
         test_labels = np.array(raw_dict[b"labels"])
         model_output = np.argmax(model(test_images), axis=1)
-        accuracy = (np.sum(model_output == test_labels) / test_labels.size)
+        accuracy = np.sum(model_output == test_labels) / test_labels.size
         print("On test set, achieved accuracy of %0.1f%%" % (100 * accuracy))
-

@@ -17,7 +17,7 @@ class GroupNorm(tf.Module):
             name="GN/gamma",
         )
         self.beta = tf.Variable(
-            rng.normal(shape=[1, 1, 1,channels], stddev=stddev),
+            rng.normal(shape=[1, 1, 1, channels], stddev=stddev),
             trainable=True,
             name="GN/beta",
         )
@@ -97,9 +97,11 @@ class Classifier(tf.Module):
         self.strides = [1, pool_dims, pool_dims, 1]
         self.padding = "SAME"
 
-        perceptron_dims = (input_dims * input_dims * input_channels) // (pool_dims*pool_dims)
+        perceptron_dims = (input_dims * input_dims * input_channels) // (
+            pool_dims * pool_dims
+        )
         self.output_perceptron = MLP(
-            num_inputs= perceptron_dims,
+            num_inputs=perceptron_dims,
             num_outputs=output_dim,
             num_hidden_layers=num_lin_layers,
             hidden_layer_width=hidden_lin_width,
@@ -128,12 +130,12 @@ if __name__ == "__main__":
     import os
     import numpy as np
     from CIFAR_UTILS import unpickle, augment, restructure
+
     # from tqdm import trange
 
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
-
 
     # Getting training data from local CIFAR
     CIFAR_LOC = "CIFAR"
@@ -151,18 +153,18 @@ if __name__ == "__main__":
         path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, batch)
         raw_dict = unpickle(path)
         batch_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
-        #This line is necessary for visualizing and rendering, as we expect channels at the back
-        batch_images = np.transpose(batch_images, (0, 2, 3,  1))
+        # This line is necessary for visualizing and rendering, as we expect channels at the back
+        batch_images = np.transpose(batch_images, (0, 2, 3, 1))
         images.append(batch_images)
         ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
-        num_clones=0
-        extra_images,num_clones = augment(batch_images)
+        num_clones = 0
+        extra_images, num_clones = augment(batch_images)
         ##Shuffling so that validation set is representative
         images.append(extra_images)
-        labels.append(raw_dict[b"labels"]*(num_clones+1))
+        labels.append(raw_dict[b"labels"] * (num_clones + 1))
     print("Loaded Data")
     images = np.concatenate(images, axis=0)
-    ##shuffling with a seed to 
+    ##shuffling with a seed to
     labels = np.concatenate(labels, axis=0)
 
     # randomize = np.arange(len(labels))
@@ -172,12 +174,10 @@ if __name__ == "__main__":
     # images = images[randomize]
     # labels = labels[randomize]
 
-
-
     BATCH_SIZE = 100
     NUM_ITERS = 50000
     VALIDATE = True
-    VALIDATE_SPLIT=1
+    VALIDATE_SPLIT = 1
     # VALIDATE_SPLIT = 0.95
     TEST = True
     tf_rng = tf.random.get_global_generator()
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "data_batch_5")
     raw_dict = unpickle(path)
     test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
-    validation_images= np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
+    validation_images = np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
     validation_labels = np.array(raw_dict[b"labels"])
 
     restruct_labels = restructure(labels)
@@ -223,7 +223,5 @@ if __name__ == "__main__":
     print("Beginning Training")
 
     model_output = np.argmax(model(validation_images), axis=1)
-    accuracy = (
-        np.sum(model_output == validation_labels) / validation_labels.size
-    )    
+    accuracy = np.sum(model_output == validation_labels) / validation_labels.size
     print("On validation set, achieved untrained accuracy of %.1f%%" % (100 * accuracy))
