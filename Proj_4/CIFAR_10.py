@@ -10,7 +10,7 @@ class GroupNorm(tf.Module):
     def __init__(self, groups, channels, eps=1e-5, seed=42):
         rng = tf.random.get_global_generator()
         rng.reset_from_seed(seed)
-        stddev = 1 / channels
+        stddev = 2 / channels
         self.gamma = tf.Variable(
             rng.normal(shape=[1, 1, 1, channels], stddev=stddev),
             trainable=True,
@@ -210,11 +210,16 @@ if __name__ == "__main__":
     #     render_img(image=images[i],path=str(i), label=label_strings[labels[i]])
 
     BATCH_SIZE = 128
-    NUM_ITERS = 40000
+    size = int(labels.size * VALIDATE_SPLIT)
+
+    # NUM_ITERS = 4000
+    epochs = 0
+    total_epochs = 20 
+    NUM_ITERS = int(total_epochs * size / BATCH_SIZE)
+
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
-    size = int(labels.size * VALIDATE_SPLIT)
 
     print("Making Model")
 
@@ -229,17 +234,20 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.0,
-        group_sizes=[1, 15, 15, 32, 32, 32, 32, 32, 16, 3, 3, 1],
-        channel_scales=[3, 15, 15, 32, 64, 32, 32, 32, 16, 3, 3, 1],
+        group_sizes=   [3,5,8,16,32,3,1],
+        channel_scales=[3,5,16,32,64,3,1],
     )
 
-    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    # optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    optimizer = tf.optimizers.AdamW(learning_rate=0.001)
 
     ##Converting batch_size to epochs
     epochs = 0
     total_epochs = BATCH_SIZE * NUM_ITERS / size
 
     print("Running for %0.4f epochs" % total_epochs)
+    print("Running for %0.4f iterations" % NUM_ITERS)
+
     n_min = 0.1
     n_max = 2
 
@@ -251,20 +259,21 @@ if __name__ == "__main__":
             # batch_images = tf.expand_dims(image_slice, axis=3)
 
             batch_labels = restruct_labels[batch_indices, :]
-            predicted = model(batch_images, True)
+            predicted = model(batch_images, False)
             # Cross Entropy Loss Function
             loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
             loss = tf.math.reduce_mean(loss)
 
         epochs += BATCH_SIZE / size
-        ##Cosine annealing
-        n_t = n_min + (n_max - n_min) * (
-            1 + tf.math.cos(epochs * math.pi / total_epochs)
-        )
+        # ##Cosine annealing
+        # n_t = n_min + (n_max - n_min) * (
+        #     1 + tf.math.cos(epochs * math.pi / total_epochs)
+        # )
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.train(
-            grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
-        )
+        optimizer.apply_gradients(zip(grads,model.trainable_variables))
+        # optimizer.train(
+        #     grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=0.1
+        # )
         if i % 3 == 0:
             if i % 240 == 0:
                 ##Mini validation to see performance
