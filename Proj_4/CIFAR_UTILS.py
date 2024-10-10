@@ -1,7 +1,8 @@
-import pickle
-import numpy as np
-import matplotlib.pyplot as plt
 import os
+import pickle
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def unpickle(file: str) -> dict:
@@ -47,7 +48,7 @@ def augment(
 
 
 # Converts 1xn labels into nx10 labels with each index representing a 0
-def restructure(labels,size=10):
+def restructure(labels, size=10):
     mat = np.zeros((labels.size, size))
     for x in range(0, labels.size):
         mat[x, labels[x]] = 1

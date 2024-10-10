@@ -1,8 +1,8 @@
 import math
 
 import tensorflow as tf
-from conv2d import Conv2d
 from adam import Adam
+from conv2d import Conv2d
 from MLP import MLP
 
 
@@ -143,8 +143,9 @@ class Classifier(tf.Module):
 
 if __name__ == "__main__":
     import os
+
     import numpy as np
-    from CIFAR_UTILS import unpickle, augment, restructure
+    from CIFAR_UTILS import augment, restructure, unpickle
     from tqdm import trange
 
     tf_rng = tf.random.get_global_generator()
@@ -214,7 +215,7 @@ if __name__ == "__main__":
 
     # NUM_ITERS = 4000
     epochs = 0
-    total_epochs = 20 
+    total_epochs = 20
     NUM_ITERS = int(total_epochs * size / BATCH_SIZE)
 
     tf_rng = tf.random.get_global_generator()
@@ -233,9 +234,9 @@ if __name__ == "__main__":
         hidden_lin_width=125,
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
-        dropout_rate=0.0,
-        group_sizes= [3,5,8,16,32,3,1],
-        channel_scales=[3,5,16,32,64,3,1],
+        dropout_rate=0.05,
+        group_sizes=[3, 5, 8, 16, 32, 3, 1],
+        channel_scales=[3, 5, 16, 32, 64, 3, 1],
     )
 
     # optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
@@ -259,7 +260,7 @@ if __name__ == "__main__":
             # batch_images = tf.expand_dims(image_slice, axis=3)
 
             batch_labels = restruct_labels[batch_indices, :]
-            predicted = model(batch_images, False)
+            predicted = model(batch_images, True)
             # Cross Entropy Loss Function
             loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
             loss = tf.math.reduce_mean(loss)
@@ -270,7 +271,7 @@ if __name__ == "__main__":
         #     1 + tf.math.cos(epochs * math.pi / total_epochs)
         # )
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(grads,model.trainable_variables))
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
         # optimizer.train(
         #     grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=0.1
         # )

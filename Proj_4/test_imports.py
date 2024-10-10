@@ -1,8 +1,8 @@
 import math
 
 import tensorflow as tf
-from conv2d import Conv2d
 from adam import Adam
+from conv2d import Conv2d
 from MLP import MLP
 
 
@@ -128,8 +128,9 @@ class Classifier(tf.Module):
 
 if __name__ == "__main__":
     import os
+
     import numpy as np
-    from CIFAR_UTILS import unpickle, augment, restructure
+    from CIFAR_UTILS import augment, restructure, unpickle
 
     # from tqdm import trange
 

@@ -1,8 +1,8 @@
 import math
 
 import tensorflow as tf
-from conv2d import Conv2d
 from adam import Adam
+from conv2d import Conv2d
 from MLP import MLP
 
 
@@ -143,10 +143,11 @@ class Classifier(tf.Module):
 
 if __name__ == "__main__":
     import os
+
     import numpy as np
-    from CIFAR_UTILS import unpickle, augment, restructure, render_img
-    from tqdm import trange
+    from CIFAR_UTILS import augment, render_img, restructure, unpickle
     from sklearn.metrics import top_k_accuracy_score
+    from tqdm import trange
 
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
@@ -168,11 +169,10 @@ if __name__ == "__main__":
     VALIDATE = True
     VALIDATE_SPLIT = 0.95
     image_list = []
-    label_list= []
+    label_list = []
 
     train_size = int(VALIDATE_SPLIT * len(raw_dict[b"fine_labels"]))
     images = np.reshape(raw_dict[b"data"], IMG_DIMS)
-    
 
     # This line is necessary for visualizing and rendering, as we expect channels at the back
     images = np.transpose(images, (0, 2, 3, 1))
@@ -189,15 +189,14 @@ if __name__ == "__main__":
     image_list.append(extra_images)
     label_list.append(train_labels * (num_clones + 1))
 
-    train_images = np.concatenate(image_list,axis=0)
-    train_labels = np.concatenate(label_list, axis=0).reshape(-1,1)
+    train_images = np.concatenate(image_list, axis=0)
+    train_labels = np.concatenate(label_list, axis=0).reshape(-1, 1)
 
-    restruct_labels = restructure(train_labels,100)
+    restruct_labels = restructure(train_labels, 100)
 
     TEST = True
 
-    size = train_size * (num_clones + 1) 
-
+    size = train_size * (num_clones + 1)
 
     # ##generating a set of labelled images.
     # k = 5
@@ -226,8 +225,8 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.0,
-        group_sizes= [3,5,8,16,32,3,1],
-        channel_scales=[3,5,16,32,64,3,1],
+        group_sizes=[3, 5, 8, 16, 32, 3, 1],
+        channel_scales=[3, 5, 16, 32, 64, 3, 1],
     )
 
     optimizer = tf.optimizers.AdamW(learning_rate=0.001)
@@ -259,7 +258,7 @@ if __name__ == "__main__":
             1 + tf.math.cos(epochs * math.pi / total_epochs)
         )
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(grads,model.trainable_variables))
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
         if i % 3 == 0:
             if i % 240 == 0:
                 ##Mini validation to see performance
@@ -273,8 +272,14 @@ if __name__ == "__main__":
             bar.refresh()
 
     model_out = model(validation_images)
-    print("On test set, achieved Top-1 accuracy of %0.1f%%" % (100 * top_k_accuracy_score(validation_labels,model_out,k=1)))
-    print("On test set, achieved Top-5 accuracy of %0.1f%%" % (100 * top_k_accuracy_score(validation_labels,model_out,k=5)))
+    print(
+        "On test set, achieved Top-1 accuracy of %0.1f%%"
+        % (100 * top_k_accuracy_score(validation_labels, model_out, k=1))
+    )
+    print(
+        "On test set, achieved Top-5 accuracy of %0.1f%%"
+        % (100 * top_k_accuracy_score(validation_labels, model_out, k=5))
+    )
     print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
 
     # fig, ax1 = plt.subplots(1, 1)
@@ -288,7 +293,13 @@ if __name__ == "__main__":
         # extra_images,num_clones = augment(batch_images)
         test_labels = np.array(raw_dict[b"fine_labels"])
         model_out = model(test_images)
-        print("On test set, achieved Top-1 accuracy of %0.1f%%" % (100 * top_k_accuracy_score(test_labels,model_out,k=1)))
-        print("On test set, achieved Top-5 accuracy of %0.1f%%" % (100 * top_k_accuracy_score(test_labels,model_out,k=5)))
+        print(
+            "On test set, achieved Top-1 accuracy of %0.1f%%"
+            % (100 * top_k_accuracy_score(test_labels, model_out, k=1))
+        )
+        print(
+            "On test set, achieved Top-5 accuracy of %0.1f%%"
+            % (100 * top_k_accuracy_score(test_labels, model_out, k=5))
+        )
 
         top_5 = np.argsort()
