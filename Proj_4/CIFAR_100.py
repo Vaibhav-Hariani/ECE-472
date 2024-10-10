@@ -144,7 +144,7 @@ class Classifier(tf.Module):
 if __name__ == "__main__":
     import os
     import numpy as np
-    from CIFAR_UTILS import unpickle, augment, restructure
+    from CIFAR_UTILS import unpickle, augment, restructure, render_img
     from tqdm import trange
     from sklearn.metrics import top_k_accuracy_score
 
@@ -154,23 +154,23 @@ if __name__ == "__main__":
 
     # Getting training data from local CIFAR
     CIFAR_LOC = "CIFAR"
-    CIFAR_FOLDER = "cifar-100-batches-py"
+    CIFAR_FOLDER = "cifar-100-python"
     IMG_DIMS = (-1, 3, 32, 32)
 
-    TRAIN_SET = "traiin"
+    TRAIN_SET = "train"
     label_strings = unpickle(os.path.join(CIFAR_LOC, CIFAR_FOLDER, "meta"))[
-        b"label_names"
+        b"fine_label_names"
     ]
     path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, TRAIN_SET)
     raw_dict = unpickle(path)
-    print("Opening  " + TRAIN_SET)
+    print("Opening " + TRAIN_SET)
 
     VALIDATE = True
     VALIDATE_SPLIT = 0.95
     image_list = []
     label_list= []
 
-    train_size = int(VALIDATE_SPLIT * len(raw_dict[b"labels"]))
+    train_size = int(VALIDATE_SPLIT * len(raw_dict[b"fine_labels"]))
     images = np.reshape(raw_dict[b"data"], IMG_DIMS)
     
 
@@ -178,22 +178,21 @@ if __name__ == "__main__":
     images = np.transpose(images, (0, 2, 3, 1))
     train_images = images[:train_size]
     validation_images = images[train_size:]
-    train_labels = raw_dict[b"labels"][train_size:]
-    validation_labels = np.array(raw_dict[b"labels"][train_size:])
+    train_labels = raw_dict[b"fine_labels"][:train_size]
+    validation_labels = np.array(raw_dict[b"fine_labels"][train_size:])
 
     ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
     num_clones = 0
     extra_images, num_clones = augment(train_images)
     ##Shuffling so that validation set is representative
-    np.concatenate()
-    image_list.append(images)
+    image_list.append(train_images)
     image_list.append(extra_images)
-    label_list.append(validation_labels * (num_clones + 1))
+    label_list.append(train_labels * (num_clones + 1))
 
-    train_images = np.concatenate(images, axis=0)
-    train_labels = np.concatenate(label_list, axis=0)
+    train_images = np.concatenate(image_list,axis=0)
+    train_labels = np.concatenate(label_list, axis=0).reshape(-1,1)
 
-    restruct_labels = restructure(train_labels)
+    restruct_labels = restructure(train_labels,100)
 
     TEST = True
 
@@ -202,11 +201,11 @@ if __name__ == "__main__":
 
     # ##generating a set of labelled images.
     # k = 5
-    # indexes = np.random.randint(0, labels.size, k)
-    # image_slice = images[indexes]
-    # label_slice = labels[indexes]
+    # indexes = np.random.randint(0, train_labels.size, k)
+    # image_slice = train_images[indexes]
+    # label_slice = train_labels[indexes]
     # for i in range(k):
-    #     render_img(image=images[i],path=str(i), label=label_strings[labels[i]])
+    #     render_img(image=images[i],path=str(i), label=label_strings[train_labels[i]])
 
     BATCH_SIZE = 128
     NUM_ITERS = 40000
@@ -218,7 +217,7 @@ if __name__ == "__main__":
 
     model = Classifier(
         input_dims=32,
-        output_dim=10,
+        output_dim=100,
         pool_dims=2,
         conv_dims=3,
         conv_activation=tf.nn.leaky_relu,
@@ -245,7 +244,7 @@ if __name__ == "__main__":
     for i in bar:
         batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
-            batch_images = tf.cast(images[batch_indices], dtype=tf.float32)
+            batch_images = tf.cast(train_images[batch_indices], dtype=tf.float32)
             # batch_images = tf.expand_dims(image_slice, axis=3)
 
             batch_labels = restruct_labels[batch_indices, :]
@@ -287,7 +286,7 @@ if __name__ == "__main__":
         test_images = np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
         # ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
         # extra_images,num_clones = augment(batch_images)
-        test_labels = np.array(raw_dict[b"labels"])
+        test_labels = np.array(raw_dict[b"fine_labels"])
         model_out = model(test_images)
         print("On test set, achieved Top-1 accuracy of %0.1f%%" % (100 * top_k_accuracy_score(test_labels,model_out,k=1)))
         print("On test set, achieved Top-5 accuracy of %0.1f%%" % (100 * top_k_accuracy_score(test_labels,model_out,k=5)))

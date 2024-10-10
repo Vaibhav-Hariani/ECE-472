@@ -47,8 +47,8 @@ def augment(
 
 
 # Converts 1xn labels into nx10 labels with each index representing a 0
-def restructure(labels):
-    mat = np.zeros((labels.size, 10))
+def restructure(labels,size=10):
+    mat = np.zeros((labels.size, size))
     for x in range(0, labels.size):
         mat[x, labels[x]] = 1
     return mat
