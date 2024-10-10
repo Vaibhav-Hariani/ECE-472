@@ -126,7 +126,7 @@ class Classifier(tf.Module):
 
         # Define the max pooling operation
 
-        pooled_out = tf.nn.max_pool2d(
+        pooled_out = tf.nn.avg_pool2d(
             current, ksize=self.pool_kernel, strides=self.strides, padding=self.padding
         )
         perceptron_in = tf.reshape(pooled_out, (pooled_out.shape[0], -1))
@@ -176,6 +176,7 @@ if __name__ == "__main__":
     VALIDATE = True
     VALIDATE_SPLIT=0.95
     TEST = True
+
     ##Creating validation set out of a slice of the last batch: This is 500 images.
     dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "data_batch_5")
     raw_dict = unpickle(path)
@@ -208,8 +209,8 @@ if __name__ == "__main__":
 
 
 
-    BATCH_SIZE = 150
-    NUM_ITERS = 1000
+    BATCH_SIZE = 128
+    NUM_ITERS = 40000
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
@@ -220,19 +221,19 @@ if __name__ == "__main__":
     model = Classifier(
         input_dims=32,
         output_dim=10,
-        pool_dims=4,
-        conv_dims=5,
-        conv_activation=tf.nn.relu,
+        pool_dims=2,
+        conv_dims=3,
+        conv_activation=tf.nn.leaky_relu,
         num_lin_layers=5,
         hidden_lin_width=125,
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
-        dropout_rate=0.1,
-        group_sizes=[3,5,8,32,4],
-        channel_scales=[3,15,32,64,4]
+        dropout_rate=0.0,
+        group_sizes=[1,5,5,15,5,3,1],
+        channel_scales=[3,5,15,30,15,15,3]
     )
 
-    optimizer = Adam(size=len(model.trainable_variables), step_size=3e-4)
+    optimizer = Adam(size=len(model.trainable_variables), step_size=.001)
 
 
     ##Converting batch_size to epochs
@@ -266,12 +267,13 @@ if __name__ == "__main__":
         optimizer.train(
             grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t
         )
-        if(i % 250 == 0):
-            ##Mini validation to see performance
-            model_output = np.argmax(model(validation_images), axis=1)
-            accuracy = (
-                np.sum(model_output == validation_labels) / (validation_labels.size)
-            )
+        if(i % 3 == 0):
+            if(i % 240 == 0):
+                ##Mini validation to see performance
+                model_output = np.argmax(model(validation_images), axis=1)
+                accuracy = (
+                    np.sum(model_output == validation_labels) / (validation_labels.size)
+                )
             bar.set_description(
                 f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}, accuracy => {accuracy:0.3f}:"
             )
