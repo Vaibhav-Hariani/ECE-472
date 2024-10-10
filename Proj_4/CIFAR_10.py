@@ -104,8 +104,7 @@ class Classifier(tf.Module):
                     dropout_rate=dropout_rate,
                 )
             )
-        self.pool_kernel = [1, pool_dims, pool_dims, 1]
-        self.strides = [1, pool_dims, pool_dims, 1]
+        self.pool_dims = pool_dims
         self.padding = "SAME"
 
         perceptron_dims = (input_dims * input_dims * channel_scales[-1]) // (pool_dims*pool_dims)
@@ -123,14 +122,12 @@ class Classifier(tf.Module):
         current = input
         for layer in self.res_layers:
             current = layer(current, dropout)
-
         # Define the max pooling operation
 
         pooled_out = tf.nn.avg_pool2d(
-            current, ksize=self.pool_kernel, strides=self.strides, padding=self.padding
+            current, ksize=self.pool_dims, strides=self.pool_dims, padding=self.padding
         )
         perceptron_in = tf.reshape(pooled_out, (pooled_out.shape[0], -1))
-
         ##Flattens for perceptron
         return self.output_perceptron(perceptron_in, dropout)
 
@@ -229,8 +226,8 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.0,
-        group_sizes=[1,5,15,32,32,15,5,3,5,3],
-        channel_scales=[3,5,15,32,64,15,15,3,5,3]
+        group_sizes=[1,15,15,32,32,32,32,32,16,3,3,3,3,3],
+        channel_scales=[3,15,15,32,64,32,32,32,16,3,3,3]
     )
 
     optimizer = Adam(size=len(model.trainable_variables), step_size=.001)
