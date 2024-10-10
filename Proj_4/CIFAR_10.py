@@ -229,8 +229,8 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.0,
-        group_sizes=[1,5,5,15,5,3,1],
-        channel_scales=[3,5,15,30,15,15,3]
+        group_sizes=[1,5,15,32,32,15,5,3,5,3],
+        channel_scales=[3,5,15,32,64,15,15,3,5,3]
     )
 
     optimizer = Adam(size=len(model.trainable_variables), step_size=.001)
