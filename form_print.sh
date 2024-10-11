@@ -7,7 +7,9 @@ for var in "$@"
         do 
             output="Submissions/$(basename $file)"
             vim -c "hardcopy > $output.ps" -c wq $file
-            # ps2pdf "$output.ps" -o "$output.pdf"
-            # rm "$output.ps"
+            echo "$output.ps $output.pdf"
+            ps2pdf $output.ps $output.pdf
+            rm Submissions/*.ps
         done
     done
+#  pdfunite Submissions/*.py.pdf Submissions/Combined_Submission.pdf

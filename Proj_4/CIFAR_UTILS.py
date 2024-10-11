@@ -20,7 +20,11 @@ def render_img(image, path, label=""):
 
 
 def augment(
-    image_set: np.ndarray, render=False, batch="", labels=[0], label_strings=[""]
+    image_set: np.ndarray,
+    render=False,
+    batch="",
+    labels=[0],
+    label_strings=[""],
 ):
     ##Returns number of clones (for label expansion),
     ##as well as the modified images themselves

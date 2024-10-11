@@ -24,7 +24,7 @@ class GroupNorm(tf.Module):
         self.eps = eps
         self.groups = groups
 
-    ##Directly from the paper
+    # Directly from the paper
     def __call__(self, x):
         N, H, W, C = x.shape
         # C = channels
@@ -67,7 +67,7 @@ class ResidualBlock(tf.Module):
         self.activation = activation
 
     def __call__(self, input, dropout=False):
-        ##Using this to prevent soft copying
+        # Using this to prevent soft copying
         input = self.input_conv(input)
         intermediate = input
         for i in range(self.num_layers):
@@ -134,10 +134,13 @@ class Classifier(tf.Module):
         # Define the max pooling operation
 
         pooled_out = tf.nn.avg_pool2d(
-            current, ksize=self.pool_dims, strides=self.pool_dims, padding=self.padding
+            current,
+            ksize=self.pool_dims,
+            strides=self.pool_dims,
+            padding=self.padding,
         )
         perceptron_in = tf.reshape(pooled_out, (pooled_out.shape[0], -1))
-        ##Flattens for perceptron
+        # Flattens for perceptron
         return self.output_perceptron(perceptron_in, dropout)
 
 
@@ -181,10 +184,10 @@ if __name__ == "__main__":
     train_labels = raw_dict[b"fine_labels"][:train_size]
     validation_labels = np.array(raw_dict[b"fine_labels"][train_size:])
 
-    ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
+    # Images are subject to gaussian noise, inversion, and flipping in two dimensions
     num_clones = 0
     extra_images, num_clones = augment(train_images)
-    ##Shuffling so that validation set is representative
+    # Shuffling so that validation set is representative
     image_list.append(train_images)
     image_list.append(extra_images)
     label_list.append(train_labels * (num_clones + 1))
@@ -231,7 +234,7 @@ if __name__ == "__main__":
 
     optimizer = tf.optimizers.AdamW(learning_rate=0.001)
 
-    ##Converting batch_size to epochs
+    # Converting batch_size to epochs
     epochs = 0
     total_epochs = BATCH_SIZE * NUM_ITERS / size
 
@@ -243,17 +246,21 @@ if __name__ == "__main__":
     for i in bar:
         batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
-            batch_images = tf.cast(train_images[batch_indices], dtype=tf.float32)
+            batch_images = tf.cast(
+                train_images[batch_indices], dtype=tf.float32
+            )
             # batch_images = tf.expand_dims(image_slice, axis=3)
 
             batch_labels = restruct_labels[batch_indices, :]
             predicted = model(batch_images, True)
             # Cross Entropy Loss Function
-            loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
+            loss = tf.keras.losses.categorical_crossentropy(
+                batch_labels, predicted
+            )
             loss = tf.math.reduce_mean(loss)
 
         epochs += BATCH_SIZE / size
-        ##Cosine annealing
+        # Cosine annealing
         n_t = n_min + (n_max - n_min) * (
             1 + tf.math.cos(epochs * math.pi / total_epochs)
         )
@@ -261,7 +268,7 @@ if __name__ == "__main__":
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
         if i % 3 == 0:
             if i % 240 == 0:
-                ##Mini validation to see performance
+                # Mini validation to see performance
                 model_output = np.argmax(model(validation_images), axis=1)
                 accuracy = np.sum(model_output == validation_labels) / (
                     validation_labels.size

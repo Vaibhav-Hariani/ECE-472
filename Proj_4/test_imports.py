@@ -49,7 +49,12 @@ class ResidualBlock(tf.Module):
         self.convs = []
         for layer in range(layers_between):
             self.convs.append(
-                Conv2d(dim=dim, in_channel=3, out_channel=3, dropout_rate=dropout_rate)
+                Conv2d(
+                    dim=dim,
+                    in_channel=3,
+                    out_channel=3,
+                    dropout_rate=dropout_rate,
+                )
             )
         self.activation = activation
 
@@ -118,7 +123,10 @@ class Classifier(tf.Module):
         # Define the max pooling operation
 
         pooled_out = tf.nn.max_pool2d(
-            current, ksize=self.pool_kernel, strides=self.strides, padding=self.padding
+            current,
+            ksize=self.pool_kernel,
+            strides=self.strides,
+            padding=self.padding,
         )
         perceptron_in = tf.reshape(pooled_out, (pooled_out.shape[0], -1))
 
@@ -144,9 +152,9 @@ if __name__ == "__main__":
     IMG_DIMS = (-1, 3, 32, 32)
 
     batches = ["data_batch_" + str(x + 1) for x in range(4)]
-    label_strings = unpickle(os.path.join(CIFAR_LOC, CIFAR_FOLDER, "batches.meta"))[
-        b"label_names"
-    ]
+    label_strings = unpickle(
+        os.path.join(CIFAR_LOC, CIFAR_FOLDER, "batches.meta")
+    )[b"label_names"]
     images = []
     labels = []
     for batch in batches:
@@ -189,7 +197,9 @@ if __name__ == "__main__":
     dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "data_batch_5")
     raw_dict = unpickle(path)
     test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
-    validation_images = np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
+    validation_images = np.transpose(test_images, (0, 2, 3, 1)).astype(
+        np.float32
+    )
     validation_labels = np.array(raw_dict[b"labels"])
 
     restruct_labels = restructure(labels)
@@ -224,5 +234,10 @@ if __name__ == "__main__":
     print("Beginning Training")
 
     model_output = np.argmax(model(validation_images), axis=1)
-    accuracy = np.sum(model_output == validation_labels) / validation_labels.size
-    print("On validation set, achieved untrained accuracy of %.1f%%" % (100 * accuracy))
+    accuracy = (
+        np.sum(model_output == validation_labels) / validation_labels.size
+    )
+    print(
+        "On validation set, achieved untrained accuracy of %.1f%%"
+        % (100 * accuracy)
+    )
