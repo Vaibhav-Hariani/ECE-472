@@ -210,7 +210,7 @@ if __name__ == "__main__":
     #     render_img(image=images[i],path=str(i), label=label_strings[train_labels[i]])
 
     BATCH_SIZE = 128
-    NUM_ITERS = 40000
+    NUM_ITERS = 40
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
@@ -228,8 +228,8 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.0,
-        group_sizes=[3, 5, 8, 16, 32, 3, 1],
-        channel_scales=[3, 5, 16, 32, 64, 3, 1],
+        group_sizes=[3, 5, 8, 16, 32, 32, 16, 16, 16, 1],
+        channel_scales=[3, 5, 16, 32, 64, 32, 32, 32, 32, 1],
     )
 
     optimizer = tf.optimizers.AdamW(learning_rate=0.001)
@@ -278,16 +278,17 @@ if __name__ == "__main__":
             )
             bar.refresh()
 
-    model_out = model(validation_images)
+    path = os.path.join('/data_out', 'CIFAR_100/1/')
+    tf.saved_model.save(pretrained_model, path)
+    model_out = model(validation_images)    
     print(
-        "On test set, achieved Top-1 accuracy of %0.1f%%"
+        "On validation set, achieved Top-1 accuracy of %0.1f%%"
         % (100 * top_k_accuracy_score(validation_labels, model_out, k=1))
     )
     print(
-        "On test set, achieved Top-5 accuracy of %0.1f%%"
+        "On validation set, achieved Top-5 accuracy of %0.1f%%"
         % (100 * top_k_accuracy_score(validation_labels, model_out, k=5))
     )
-    print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
 
     # fig, ax1 = plt.subplots(1, 1)
     if TEST:
