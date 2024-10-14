@@ -228,8 +228,8 @@ if __name__ == "__main__":
         lin_activation=tf.nn.leaky_relu,
         lin_output_activation=tf.nn.softmax,
         dropout_rate=0.0,
-        group_sizes=[3, 5, 8, 16, 32, 32, 16, 16, 16, 1],
-        channel_scales=[3, 5, 16, 32, 64, 32, 32, 32, 32, 1],
+        group_sizes=[3, 5, 8, 16, 32, 32, 32, 1],
+        channel_scales=[3, 5, 16, 32, 64, 128, 256, 1],
     )
 
     optimizer = tf.optimizers.AdamW(learning_rate=0.001)
@@ -269,17 +269,15 @@ if __name__ == "__main__":
         if i % 3 == 0:
             if i % 240 == 0:
                 # Mini validation to see performance
-                model_output = np.argmax(model(validation_images), axis=1)
-                accuracy = np.sum(model_output == validation_labels) / (
-                    validation_labels.size
-                )
+                model_output = model(validation_images)
+                top_5_accuracy = 100 * top_k_accuracy_score(validation_labels, model_output, k=5)
             bar.set_description(
-                f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}, Top-1 accuracy => {accuracy:0.3f}:"
+                f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}, Top-5 accuracy => {top_5_accuracy:0.2f}:"
             )
             bar.refresh()
 
-    path = os.path.join('/data_out', 'CIFAR_100/1/')
-    tf.saved_model.save(pretrained_model, path)
+    model_path = os.path.join('Proj_4', 'CIFAR_100/1/')
+    tf.saved_model.save(model, model_path)
     model_out = model(validation_images)    
     print(
         "On validation set, achieved Top-1 accuracy of %0.1f%%"
@@ -289,17 +287,17 @@ if __name__ == "__main__":
         "On validation set, achieved Top-5 accuracy of %0.1f%%"
         % (100 * top_k_accuracy_score(validation_labels, model_out, k=5))
     )
-
     # fig, ax1 = plt.subplots(1, 1)
+
     if TEST:
         dict_path = os.path.join(CIFAR_LOC, CIFAR_FOLDER, "test")
-        raw_dict = unpickle(path)
+        raw_dict = unpickle(dict_path)
         test_images = np.reshape(raw_dict[b"data"], IMG_DIMS)
         # This line is necessary for visualizing and rendering, as we expect channels at the back
-        test_images = np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)
+        test_images = np.transpose(test_images, (0, 2, 3, 1)).astype(np.float32)[:500]
         # ##Images are subject to gaussian noise, inversion, and flipping in two dimensions
         # extra_images,num_clones = augment(batch_images)
-        test_labels = np.array(raw_dict[b"fine_labels"])
+        test_labels = np.array(raw_dict[b"fine_labels"])[:500]
         model_out = model(test_images)
         print(
             "On test set, achieved Top-1 accuracy of %0.1f%%"
@@ -309,5 +307,3 @@ if __name__ == "__main__":
             "On test set, achieved Top-5 accuracy of %0.1f%%"
             % (100 * top_k_accuracy_score(test_labels, model_out, k=5))
         )
-
-        top_5 = np.argsort()
