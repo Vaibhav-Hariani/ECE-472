@@ -6,7 +6,7 @@ from tensorflow import math
 class Adam:
     def __init__(
         self,
-        size,
+        size=0.001,
         beta_1=0.9,
         beta_2=0.999,
         step_size=0.001,
@@ -23,7 +23,7 @@ class Adam:
         self.v_ts = [0] * size
         self.w = w
 
-    def train(self, grads, vars, adamW=False, decay_scale=0.1):
+    def train(self, grads, vars, adamW = True, decay_scale=0.004):
         self.t += 1
         for i in range(self.size):
             self.m_ts[i] = self.beta_1 * self.m_ts[i] + (1 - self.beta_1) * grads[i]
@@ -32,9 +32,9 @@ class Adam:
             )
             m_t_hat = self.m_ts[i] / (1 - self.beta_1**self.t)
             v_t_hat = self.v_ts[i] / (1 - self.beta_2**self.t)
-            offset = self.step_size * m_t_hat / math.sqrt(v_t_hat + self.epsilon)
-            if adamW:
-                offset += self.w * vars[i]
+            offset = self.step_size * m_t_hat / (math.sqrt(v_t_hat) + self.epsilon)
+            # if adamW:
+            #     offset += self.w * vars[i]
             offset = decay_scale * offset
             vars[i].assign_sub(offset)
 

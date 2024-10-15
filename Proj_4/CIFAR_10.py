@@ -160,7 +160,7 @@ if __name__ == "__main__":
     CIFAR_FOLDER = "cifar-10-batches-py"
     IMG_DIMS = (-1, 3, 32, 32)
 
-    batches = ["data_batch_" + str(x + 1) for x in range(4)]
+    batches = ["data_batch_" + str(x + 1) for x in range(1)]
     label_strings = unpickle(
         os.path.join(CIFAR_LOC, CIFAR_FOLDER, "batches.meta")
     )[b"label_names"]
@@ -242,8 +242,8 @@ if __name__ == "__main__":
         channel_scales=[3, 5, 16, 32, 64, 3, 1],
     )
 
-    # optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
-    optimizer = tf.optimizers.AdamW(learning_rate=0.001)
+    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    # optimizer = tf.optimizers.AdamW(learning_rate=0.001)
 
     ##Converting batch_size to epochs
     epochs = 0
@@ -272,14 +272,14 @@ if __name__ == "__main__":
 
         epochs += BATCH_SIZE / size
         # ##Cosine annealing
-        # n_t = n_min + (n_max - n_min) * (
-        #     1 + tf.math.cos(epochs * math.pi / total_epochs)
-        # )
+        n_t = n_min + (n_max - n_min) * (
+            1 + tf.math.cos(epochs * math.pi / total_epochs)
+        )
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(grads, model.trainable_variables))
-        # optimizer.train(
-        #     grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=0.1
-        # )
+        # optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        optimizer.train(
+            grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=0.1
+        )
         if i % 3 == 0:
             if i % 240 == 0:
                 ##Mini validation to see performance
