@@ -21,15 +21,15 @@ if __name__ == "__main__":
     ds = load_dataset("fancyzhx/ag_news",split="train")
     embedder = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
-    # labels = ds['label']
-
-    # labels = restructure(labels, tf.size(labels), 4)
-
-    # perceptron = MLP()
     BATCH_SIZE = 100
     NUM_ITERS = 1000
 
+    VALIDATE_SPLIT = 0.95
+    accuracy = 0
+
+
     bar = trange(NUM_ITERS)
+
 
     model = MLP(
         num_inputs=384,
@@ -46,12 +46,16 @@ if __name__ == "__main__":
     n_min = 0.1
     n_max = 2
     epochs = 0
-    size = ds.num_rows
+    size = int(len(ds['label']) * VALIDATE_SPLIT)    
     total_epochs = BATCH_SIZE * NUM_ITERS / size
+
+    validation_slice = np.arange(size, len(ds['label']))
+    validation_ds = ds.select(validation_slice)
+    val_embeddings = embedder.encode(validation_ds['text'])
 
 
     for i in bar:
-        batch_indices = np_rng.integers(low=0, high=ds.num_rows, size=BATCH_SIZE).T
+        batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         sample = ds.select(batch_indices)
         embeddings = embedder.encode(sample['text'])
         expected = restructure(sample['label'],BATCH_SIZE, 4)
@@ -59,20 +63,25 @@ if __name__ == "__main__":
             predicted = model(embeddings,True)
             loss = tf.keras.losses.categorical_crossentropy(expected,predicted)
             loss = tf.math.reduce_mean(loss)
-
-        epochs += BATCH_SIZE / size
         ##Cosine annealing
         n_t = n_min + (n_max - n_min) * (
             1 + tf.math.cos(epochs * math.pi / total_epochs)
-        )
+        ) / 2
+        epochs += BATCH_SIZE / size
         grads = tape.gradient(loss, model.trainable_variables)
         optimizer.train(
             grads=grads, vars=model.trainable_variables, decay_scale=n_t
         )
-        bar.set_description(
-            f"Step {i}; Loss => {loss.numpy():0.4f}"
-        )
-        bar.refresh()
+        if i % 10 == 9:
+            if i % 100 == 99:
+                expected = validation_ds['label']
+                model_out = model(val_embeddings, False)
+                model_out = np.argmax(model_out,axis=1)
+                accuracy = np.sum(model_out == expected) / validation_ds.num_rows        
+            bar.set_description(
+                    f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}, Accuracy => {accuracy:0.3f}:"
+                )
+            bar.refresh()
 
     tf.saved_model.save(model, SAVE_PATH)
 
