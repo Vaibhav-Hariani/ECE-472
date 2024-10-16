@@ -22,23 +22,20 @@ if __name__ == "__main__":
     embedder = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
     BATCH_SIZE = 100
-    NUM_ITERS = 1000
+    NUM_ITERS = 500
 
     VALIDATE_SPLIT = 0.95
-    accuracy = 0
-
 
     bar = trange(NUM_ITERS)
-
 
     model = MLP(
         num_inputs=384,
         num_outputs=4,
-        num_hidden_layers=5,
+        num_hidden_layers=7,
         hidden_layer_width=256,
         hidden_activation=tf.nn.leaky_relu,
         output_activation=tf.nn.softmax,
-        dropout_rate=0.2
+        dropout_rate=0.25
         )
     
     optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
@@ -51,13 +48,16 @@ if __name__ == "__main__":
 
     validation_slice = np.arange(size, len(ds['label']))
     validation_ds = ds.select(validation_slice)
+    # embeddings = embedder.encode(ds['text'])
     val_embeddings = embedder.encode(validation_ds['text'])
-
+    # val_embeddings = embeddings[size:]
+    accuracy = 0
 
     for i in bar:
         batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         sample = ds.select(batch_indices)
         embeddings = embedder.encode(sample['text'])
+        # sample_embeddings = embeddings[batch_indices]
         expected = restructure(sample['label'],BATCH_SIZE, 4)
         with tf.GradientTape() as tape:
             predicted = model(embeddings,True)
