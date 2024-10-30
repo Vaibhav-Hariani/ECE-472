@@ -246,17 +246,13 @@ if __name__ == "__main__":
     for i in bar:
         batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
-            batch_images = tf.cast(
-                train_images[batch_indices], dtype=tf.float32
-            )
+            batch_images = tf.cast(train_images[batch_indices], dtype=tf.float32)
             # batch_images = tf.expand_dims(image_slice, axis=3)
 
             batch_labels = restruct_labels[batch_indices, :]
             predicted = model(batch_images, True)
             # Cross Entropy Loss Function
-            loss = tf.keras.losses.categorical_crossentropy(
-                batch_labels, predicted
-            )
+            loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
             loss = tf.math.reduce_mean(loss)
 
         epochs += BATCH_SIZE / size
@@ -270,15 +266,17 @@ if __name__ == "__main__":
             if i % 240 == 0:
                 # Mini validation to see performance
                 model_output = model(validation_images)
-                top_5_accuracy = 100 * top_k_accuracy_score(validation_labels, model_output, k=5)
+                top_5_accuracy = 100 * top_k_accuracy_score(
+                    validation_labels, model_output, k=5
+                )
             bar.set_description(
                 f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}, Top-5 accuracy => {top_5_accuracy:0.2f}:"
             )
             bar.refresh()
 
-    model_path = os.path.join('Proj_4', 'CIFAR_100/1/')
+    model_path = os.path.join("Proj_4", "CIFAR_100/1/")
     tf.saved_model.save(model, model_path)
-    model_out = model(validation_images)    
+    model_out = model(validation_images)
     print(
         "On validation set, achieved Top-1 accuracy of %0.1f%%"
         % (100 * top_k_accuracy_score(validation_labels, model_out, k=1))
@@ -306,7 +304,7 @@ if __name__ == "__main__":
         print(
             "On test set, achieved Top-5 accuracy of %0.1f%%"
             % (100 * top_k_accuracy_score(test_labels, model_out, k=5))
-        )        return input + intermediate
+        )
 
 
 class Classifier(tf.Module):
@@ -477,17 +475,13 @@ if __name__ == "__main__":
     for i in bar:
         batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
         with tf.GradientTape() as tape:
-            batch_images = tf.cast(
-                train_images[batch_indices], dtype=tf.float32
-            )
+            batch_images = tf.cast(train_images[batch_indices], dtype=tf.float32)
             # batch_images = tf.expand_dims(image_slice, axis=3)
 
             batch_labels = restruct_labels[batch_indices, :]
             predicted = model(batch_images, True)
             # Cross Entropy Loss Function
-            loss = tf.keras.losses.categorical_crossentropy(
-                batch_labels, predicted
-            )
+            loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
             loss = tf.math.reduce_mean(loss)
 
         epochs += BATCH_SIZE / size
@@ -501,15 +495,17 @@ if __name__ == "__main__":
             if i % 240 == 0:
                 # Mini validation to see performance
                 model_output = model(validation_images)
-                top_5_accuracy = 100 * top_k_accuracy_score(validation_labels, model_output, k=5)
+                top_5_accuracy = 100 * top_k_accuracy_score(
+                    validation_labels, model_output, k=5
+                )
             bar.set_description(
                 f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}, Top-5 accuracy => {top_5_accuracy:0.2f}:"
             )
             bar.refresh()
 
-    model_path = os.path.join('Proj_4', 'CIFAR_100/1/')
+    model_path = os.path.join("Proj_4", "CIFAR_100/1/")
     tf.saved_model.save(model, model_path)
-    model_out = model(validation_images)    
+    model_out = model(validation_images)
     print(
         "On validation set, achieved Top-1 accuracy of %0.1f%%"
         % (100 * top_k_accuracy_score(validation_labels, model_out, k=1))
