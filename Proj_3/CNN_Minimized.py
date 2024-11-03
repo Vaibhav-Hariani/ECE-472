@@ -1,6 +1,6 @@
 import tensorflow as tf
 from adam import Adam
-from MLP import MLP
+from mlp import MLP
 
 
 class Conv2d(tf.Module):

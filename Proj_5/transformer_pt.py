@@ -1,7 +1,7 @@
 import tensorflow as tf
 from adam import Adam
 from datasets import load_dataset
-from MLP import MLP
+from mlp import MLP
 from sentence_transformers import SentenceTransformer
 from utils import restructure
 

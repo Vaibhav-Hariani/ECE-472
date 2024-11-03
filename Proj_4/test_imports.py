@@ -3,7 +3,7 @@ import math
 import tensorflow as tf
 from adam import Adam
 from conv2d import Conv2d
-from MLP import MLP
+from mlp import MLP
 
 
 class GroupNorm(tf.Module):
