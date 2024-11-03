@@ -1,3 +1,5 @@
+import tensorflow as tf
+
 ##This is layernorm if Groups = 1
 class GroupNorm(tf.Module):
     def __init__(self, groups, channels, eps=1e-5, seed=42):

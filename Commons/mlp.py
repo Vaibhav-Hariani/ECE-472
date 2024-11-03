@@ -12,8 +12,8 @@ class MLP(tf.Module):
         num_outputs,
         num_hidden_layers,
         hidden_layer_width,
-        hidden_activation=tf.identity,
-        output_activation=tf.identity,
+        hidden_activation=tf.nn.relu,
+        output_activation=tf.nn.relu,
         dropout_rate=0,
         seed=[42, 0],
     ):

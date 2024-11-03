@@ -1,7 +1,7 @@
-
 import tensorflow as tf
 from conv2d import Conv2d
 from groupnorm import GroupNorm
+
 
 class ResidualBlock(tf.Module):
     def __init__(

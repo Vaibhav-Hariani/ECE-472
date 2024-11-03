@@ -32,8 +32,8 @@ class MultiHeadAttention(tf.Module):
         self.head_dim = embed_dim // num_heads
         ##For normalization
         # 3 * embed dimension to allow combining qkv into a single matrix
-        self.qkv = Linear(num_inputs=input_dim, num_outputs= 3 * embed_dim, bias = False)
-        self.out = Linear(num_inputs= embed_dim, num_outputs= embed_dim, bias=False)
+        self.qkv = Linear(num_inputs=input_dim, num_outputs=3 * embed_dim, bias=False)
+        self.out = Linear(num_inputs=embed_dim, num_outputs=embed_dim, bias=False)
 
     def __call__(self, input: tf.Tensor, mask=None):
         qkv = self.qkv(input)
