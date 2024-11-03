@@ -23,7 +23,6 @@ class MultiHeadAttention(tf.Module):
         return attention, values
 
     def __init__(self, input_dim, embed_dim, num_heads):
-        rng = tf.random.get_global_generator()
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         ##This division needs to be clean

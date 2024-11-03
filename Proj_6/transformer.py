@@ -1,4 +1,4 @@
-from Attention import MultiHeadAttention
+from Proj_6.attention import MultiHeadAttention
 import tensorflow as tf
 from resnet import ResidualBlock
 
