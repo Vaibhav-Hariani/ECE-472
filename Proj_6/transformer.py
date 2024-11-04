@@ -11,12 +11,14 @@ class Pre_Processor(tf.Module):
 
         cur_words = 0
         self.map_of_words = {}
+        self.int_to_words = {}
         ##A first pass attempt at building an embedding space given a corpus
         ##This has the limitation of not being able to parse tokens not in the corpus
         for line in corpus:
             for word in str.split(line):
                 if word not in self.map_of_words:
                     self.map_of_words[word] = cur_words
+                    self.int_to_words[cur_words] = word
                     cur_words += 1
 
         self.embeddings_size = cur_words
@@ -77,3 +79,14 @@ class TransformerBlock(tf.Module):
     def call(self, x,dropout=False):
         attention_out = x + self.attn(x,mask=self.mask,dropout=dropout)
         return self.ff(attention_out,dropout=dropout)
+    
+class Decoder(tf.Module):
+    def __init__(self, embeddings_dim, num_blocks,n,d):
+        self.encoder = Pre_Processor(None,n,d)
+        self.transformer_blocks = []
+
+        ##Need to figure out what the mask looks like
+        self.initial_decoder = TransformerBlock(embeddings_dim,5, mask=None)
+        for i in range(num_blocks):
+            self.transformer_blocks.append(TransformerBlock(embeddings_dim,5,))
+        
