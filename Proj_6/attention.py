@@ -22,9 +22,13 @@ class MultiHeadAttention(tf.Module):
 
         return attention, values
 
-    def __init__(self, input_dim, embed_dim, num_heads):
+    def __init__(self, input_dim, embed_dim, num_heads, dropout_rate=0.2,seed=[0,42]):
+        ##initialization
+        self.dropout_rate = dropout_rate
         self.embed_dim = embed_dim
         self.num_heads = num_heads
+        self.seed = seed
+
         ##This division needs to be clean
         if embed_dim % num_heads != 0:
             raise Exception("Embedded dim should be divisible by num_heads")
@@ -35,7 +39,7 @@ class MultiHeadAttention(tf.Module):
         self.qkv = Linear(num_inputs=input_dim, num_outputs=3 * embed_dim, bias=False)
         self.out = Linear(num_inputs=embed_dim, num_outputs=embed_dim, bias=False)
 
-    def __call__(self, input: tf.Tensor, mask=None):
+    def __call__(self, input: tf.Tensor, mask=None,dropout=False):
         qkv = self.qkv(input)
         ##Output dimensionality of this qkv is Batch size x 3xT
         qkv = tf.reshape(
@@ -51,4 +55,10 @@ class MultiHeadAttention(tf.Module):
             values, "batch num_head len head_dim -> batch len num_head head_dim"
         )
         values = tf.reshape(values, (input.shape[0], input.shape[1], self.embed_dim))
+
+        if dropout:
+            current = tf.nn.experimental.stateless_dropout(
+                current, self.dropout_rate, seed=self.seed
+            )
+        
         return self.out(values), attention

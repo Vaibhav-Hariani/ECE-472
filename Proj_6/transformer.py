@@ -1,11 +1,14 @@
-from Proj_6.attention import MultiHeadAttention
+from attention import MultiHeadAttention
 import tensorflow as tf
-from groupnorm import GroupNorm
-from mlp import MLP
-
+from resnet_linear import ResidualBlock
 
 class TransformerBlock(tf.Module):
-    def __init__(self, input_dim, num_heads, dim_ff, dropout_rate=0, seed=[42, 0]):
-        self.attn = MultiHeadAttention(input_dim, input_dim, num_heads)
-        self.add = MLP(num_inputs=input_dim, num_outputs=input_dim)
+    ##Mask necessary for first block in decoder
+    def __init__(self, input_dim, num_heads,dropout_rate=0.2, mask=None, seed = [0,42]):
+        self.mask = mask
+        self.attn = MultiHeadAttention(input_dim, input_dim, num_heads,dropout_rate=dropout_rate,seed=seed)
+        self.ff = ResidualBlock(input_dim=input_dim,output_dim=input_dim,dropout_rate=dropout_rate,seed=seed)
 
+    def call(self, x,dropout=False):
+        attention_out = x + self.attn(x,mask=self.mask,dropout=dropout)
+        ff = self.ff(attention_out,dropout=dropout)
