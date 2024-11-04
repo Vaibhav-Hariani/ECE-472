@@ -1,6 +1,24 @@
 from attention import MultiHeadAttention
 import tensorflow as tf
 from resnet_linear import ResidualBlock
+import numpy as np
+
+class Pre_Processor(tf.Module):
+    ##This takes in an input string, tokenizes it
+    ##Places them in an embedding space,
+    ##And then handles positional encoding.
+    def __init__(self):
+        pass
+
+    def __call__(self, context):
+        ##Given context: Break it up into tokens     
+        tokens = str.split(context)
+        tokens = np.array(tokens)
+
+        embedded_tokens = None
+        ##Assuming that tokens get properly parsed here
+
+        Tokens * positional_embeddings = 
 
 class TransformerBlock(tf.Module):
     ##Mask necessary for first block in decoder
