@@ -37,7 +37,7 @@ class Pre_Processor(tf.Module):
         ##Using ints to round down to 2
         column_row = column_row / 2
         ##Now we need to get fractions...
-        column_row = column_row.astype(np.float32) / self.d
+        column_row = 2 * column_row.astype(np.float32) / self.d
         denominator = np.power(self.n, column_row)
 
         ##By transposing, should get a casted rectangular array
