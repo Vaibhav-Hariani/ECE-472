@@ -6,11 +6,12 @@ from mlp import MLP
 
 
 class Pre_Processor(tf.Module):
-    def __init__(self, corpus, n, d):
+    def __init__(self, corpus, n, d,transformer_seq_length):
 
         self.n = n
         self.d = d
 
+        self.output_len = transformer_seq_length
         cur_words = 2
         self.map_of_words = {}
         self.int_to_words = {}
@@ -18,26 +19,24 @@ class Pre_Processor(tf.Module):
         ##Padding/EOS Tokens
         ##Got these from the tensorflow word2vec reference
         ##Only realized that existed after I'd built the rest of this :)
-        self.map_of_words["<pad>"] = 0
-        self.int_to_words[0] = "<pad>"
+        self.map_of_words["<PAD>"] = 0
+        self.int_to_words[0] = "<PAD>"
         self.map_of_words["<EOS>"] = 1
         self.int_to_words[1] = "<EOS>"
         ##A first pass attempt at building an embedding space given a corpus
         ##This has the limitation of not being able to parse tokens not in the corpus
-        for line in corpus:
-            for word in line.lower().split():
-                if word not in self.map_of_words:
-                    self.map_of_words[word] = cur_words
-                    self.int_to_words[cur_words] = word
-                    cur_words += 1
-
+        for word in corpus.lower().split():
+            if word not in self.map_of_words:
+                self.map_of_words[word] = cur_words
+                self.int_to_words[cur_words] = word
+                cur_words += 1
         self.embeddings_size = cur_words
 
     ##This is cursed to read
     ##But Numpy is so powerful
     def positional(self, seq):
         ##The number of elements in the sequence
-        ##Assuming it's formatting as nxE: n is number of sentences
+        ##Assuming it's formatting as nxE: n is number of elements in sequence
         ## X is encoding space
 
         index_row = np.arange(seq.shape[0])
@@ -64,30 +63,29 @@ class Pre_Processor(tf.Module):
     def __call__(self, context):
         ##Given context: Break it up into tokens
         tokens = str.split(context)
-        embeddings = np.zeros(self.embeddings_size)
-        ##Assuming that we've seen almost everything
-        for token in tokens:
-            if token in self.map_of_words:
-                index = self.map_of_words[token]
-                embeddings[index] = 1
-
+        tokens.append("<EOS>")
+        embeddings = np.zeros((self.embeddings_size, self.output_len))
+        for token_i in range(len(tokens)):
+            if tokens[token_i] in self.map_of_words:
+                index = self.map_of_words[tokens[token_i]]
+                embeddings[token_i,index] = 1
         return self.positional(embeddings)
 
-    ##Allows the system to train its embedding space a la word2vec 
-    def train_embeddings_custom(self,corpus,context_size):
-        ##This came out of tensorflow docs
-        pos_skip_grams = []
-        neg_skip_grams = []
-        for line in corpus:
-            words = line.lower().split()
-            ##This slowly loops over the entire 
-            for i in range(context_size,len(words) - context_size):
-                k = 0
-                while(k < context_size):
-                    ##Each context, target pair can be flipped
-                    pos_skip_grams.append(words[i],words[i-k])
-                    pos_skip_grams.append(words[i-k],words[i])
-                    pos_skip_grams.append(words[i],words[i+k])
+    # ##Allows the system to train its embedding space a la word2vec 
+    # def train_embeddings_custom(self,corpus,context_size):
+    #     ##This came out of tensorflow docs
+    #     pos_skip_grams = []
+    #     neg_skip_grams = []
+    #     for line in corpus:
+    #         words = line.lower().split()
+    #         ##This slowly loops over the entire 
+    #         for i in range(context_size,len(words) - context_size):
+    #             k = 0
+    #             while(k < context_size):
+    #                 ##Each context, target pair can be flipped
+    #                 pos_skip_grams.append(words[i],words[i-k])
+    #                 pos_skip_grams.append(words[i-k],words[i])
+    #                 pos_skip_grams.append(words[i],words[i+k])
 
 
 
@@ -110,34 +108,33 @@ class TransformerBlock(tf.Module):
 
 
 class Decoder(tf.Module):
-    def __init__(self, Corpus, transformer_dim, num_blocks, num_heads):
-        ##This is pretty standard
-        self.embeddings = Pre_Processor(Corpus, 1000, 4)
-        embeddings_dim = self.embeddings.embeddings_size
-        self.input_layer = MLP(
-            embeddings_dim,
-            transformer_dim,
-            2,
-            transformer_dim,
-            hidden_activation=tf.nn.relu,
-            output_activation=tf.nn.relu,
-            dropout_rate=0.2,
-        )
+    def __init__(self, transformer_dim, num_blocks, num_heads, embeddor=None, Corpus=None):
+        ##Allows the embeddor to be generated ahead of time
+        ## (And potentially trained)
+        # self.embeddings= embeddor
+        # if (not self.embeddings):
+        #     self.embeddings = Pre_Processor(Corpus, 1000,4,transformer_dim)
         self.transformer_blocks = []
         for i in range(num_blocks):
             self.transformer_blocks.append(TransformerBlock(transformer_dim, num_heads))
-        self.output_layer = MLP(
-            transformer_dim,
-            embeddings_dim,
-            1,
-            hidden_activation=tf.nn.relu,
-            output_activation=tf.nn.relu,
-            dropout_rate=0.2,
-        )
 
-    def __call__(self, raw_seq, mask=None, dropout=False):
-        encoded_input = self.embeddings(raw_seq)
-        x = self.input_layer(encoded_input, dropout)
+    def __call__(self, embeddings, dropout=False):
+        ##Get the input, and then mask it into an upper triangular matrix: 
+        current = tf.linalg.band_part(embeddings,0,-1)
+        ##No need for a mask as it's built into the call here
+
+        # mask = tf.ones_like(embeddings)
+        # current = self.embeddings(raw_seq)
         for block in self.transformer_blocks:
-            x = block(x, mask, dropout)
-        return self.output_layer(x, dropout)
+            current = block(current, dropout)
+        return current
+
+if __name__ == "__main__":
+        Corpus = "Now this is a story all about how My life got flipped turned upside down and Id like"
+        Embeddings = Pre_Processor(Corpus, 1000, 4,transformer_seq_length=100)
+        Transformer = Decoder(Embeddings.embeddings_size,1,5,Embeddings)
+        embeddings = Embeddings("This story")
+        embeddings = tf.cast(embeddings,tf.float32)
+        with tf.GradientTape() as tape:
+            predicted = Transformer(embeddings=embeddings)
+        j = tape.jacobian(embeddings,predicted)

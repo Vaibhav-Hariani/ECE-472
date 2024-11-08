@@ -3,3 +3,4 @@ matplotlib
 einops
 tqdm
 scikit-learn
+pytest

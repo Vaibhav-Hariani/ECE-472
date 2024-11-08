@@ -40,10 +40,11 @@ class MultiHeadAttention(tf.Module):
         self.out = Linear(num_inputs=embed_dim, num_outputs=embed_dim, bias=False)
 
     def __call__(self, input: tf.Tensor, mask=None,dropout=False):
+        input = tf.transpose(input)
         qkv = self.qkv(input)
         ##Output dimensionality of this qkv is Batch size x 3xT
         qkv = tf.reshape(
-            qkv, (input.shape[0], input.shape[1], self.num_heads, 3 * self.head_dim)
+            qkv, (input.shape[1], input.shape[0], self.num_heads, 3 * self.head_dim)
         )
         qkv = rearrange(
             qkv, "batch len num_head head_dim -> batch num_head len head_dim"
