@@ -1,9 +1,9 @@
 from attention import MultiHeadAttention
 import tensorflow as tf
-from resnet_linear import ResidualBlock
 import numpy as np
 from mlp import MLP
-
+from einops import rearrange
+from groupnorm import GroupNorm
 
 class Pre_Processor(tf.Module):
     def __init__(self, corpus, n, d,transformer_seq_length):
@@ -69,7 +69,8 @@ class Pre_Processor(tf.Module):
             if tokens[token_i] in self.map_of_words:
                 index = self.map_of_words[tokens[token_i]]
                 embeddings[token_i,index] = 1
-        return self.positional(embeddings)
+            ##dim T x E, T is sequencel length
+        return tf.transpose(self.positional(embeddings))
 
     # ##Allows the system to train its embedding space a la word2vec 
     # def train_embeddings_custom(self,corpus,context_size):
@@ -91,24 +92,26 @@ class Pre_Processor(tf.Module):
 
 class TransformerBlock(tf.Module):
     ##Mask necessary for first block in decoder
-    def __init__(self, input_dim, num_heads, dropout_rate=0.2, seed=[0, 42]):
+    def __init__(self, input_dim, embed_dim, num_heads, dropout_rate=0.2, seed=[0, 42]):
         self.attn = MultiHeadAttention(
-            input_dim, input_dim, num_heads, dropout_rate=dropout_rate, seed=seed
+            input_dim, embed_dim, num_heads, dropout_rate=dropout_rate, seed=seed
         )
-        self.ff = ResidualBlock(
-            input_dim=input_dim,
-            output_dim=input_dim,
-            dropout_rate=dropout_rate,
-            seed=seed,
-        )
+        self.layer_1 = GroupNorm(1,input_dim)
+
+        self.FF = MLP(input_dim,input_dim,2,15)
+        self.layer_1 = GroupNorm(1,input_dim)
+        self.layer_2 = GroupNorm(1,input_dim)
 
     def __call__(self, x, mask=None, dropout=False):
         attention_out = x + self.attn(x, mask=mask, dropout=dropout)
-        return self.ff(attention_out, dropout=dropout)
+        attention_out = tf.expand_dims(attention_out,0)
+        layer1 = self.layer_1(attention_out)
+        linear_out = self.FF(layer1)
+        return self.layer_2(linear_out)
 
 
 class Decoder(tf.Module):
-    def __init__(self, transformer_dim, num_blocks, num_heads, embeddor=None, Corpus=None):
+    def __init__(self, transformer_dim, embed_dim, num_heads, num_blocks, embeddor=None, Corpus=None):
         ##Allows the embeddor to be generated ahead of time
         ## (And potentially trained)
         # self.embeddings= embeddor
@@ -116,25 +119,16 @@ class Decoder(tf.Module):
         #     self.embeddings = Pre_Processor(Corpus, 1000,4,transformer_dim)
         self.transformer_blocks = []
         for i in range(num_blocks):
-            self.transformer_blocks.append(TransformerBlock(transformer_dim, num_heads))
+            self.transformer_blocks.append(TransformerBlock(transformer_dim, embed_dim, num_heads))
 
     def __call__(self, embeddings, dropout=False):
         ##Get the input, and then mask it into an upper triangular matrix: 
+
+        ##No need for a mask into attention as it's built into the call here
         current = tf.linalg.band_part(embeddings,0,-1)
-        ##No need for a mask as it's built into the call here
 
         # mask = tf.ones_like(embeddings)
         # current = self.embeddings(raw_seq)
         for block in self.transformer_blocks:
             current = block(current, dropout)
         return current
-
-if __name__ == "__main__":
-        Corpus = "Now this is a story all about how My life got flipped turned upside down and Id like"
-        Embeddings = Pre_Processor(Corpus, 1000, 4,transformer_seq_length=100)
-        Transformer = Decoder(Embeddings.embeddings_size,1,5,Embeddings)
-        embeddings = Embeddings("This story")
-        embeddings = tf.cast(embeddings,tf.float32)
-        with tf.GradientTape() as tape:
-            predicted = Transformer(embeddings=embeddings)
-        j = tape.jacobian(embeddings,predicted)
