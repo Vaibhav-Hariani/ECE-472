@@ -23,7 +23,9 @@ class MultiHeadAttention(tf.Module):
 
         return values
 
-    def __init__(self, num_inputs, embed_dim, num_heads, dropout_rate=0.2,seed=[0,42]):
+    def __init__(
+        self, num_inputs, embed_dim, num_heads, dropout_rate=0.2, seed=[0, 42]
+    ):
         ##initialization
         self.dropout_rate = dropout_rate
         self.embed_dim = embed_dim
@@ -40,7 +42,7 @@ class MultiHeadAttention(tf.Module):
         self.qkv = Linear(num_inputs=num_inputs, num_outputs=3 * embed_dim, bias=False)
         self.out = Linear(num_inputs=embed_dim, num_outputs=num_inputs, bias=False)
 
-    def __call__(self, input: tf.Tensor, mask=None,dropout=False):
+    def __call__(self, input: tf.Tensor, mask=None, dropout=False):
         qkv = self.qkv(input)
         ##Output dimensionality of this qkv is Batch size x 3xT
         qkv = tf.reshape(

@@ -1,12 +1,13 @@
-from attention import MultiHeadAttention
-import tensorflow as tf
 import numpy as np
-from mlp import MLP
+import tensorflow as tf
+from attention import MultiHeadAttention
 from einops import rearrange
 from groupnorm import GroupNorm
+from mlp import MLP
+
 
 class Pre_Processor(tf.Module):
-    def __init__(self, corpus, n, d,transformer_seq_length):
+    def __init__(self, corpus, n, d, transformer_seq_length):
 
         self.n = n
         self.d = d
@@ -15,7 +16,7 @@ class Pre_Processor(tf.Module):
         cur_words = 2
         self.map_of_words = {}
         self.int_to_words = {}
-        
+
         ##Padding/EOS Tokens
         ##Got these from the tensorflow word2vec reference
         ##Only realized that existed after I'd built the rest of this :)
@@ -68,18 +69,18 @@ class Pre_Processor(tf.Module):
         for token_i in range(len(tokens)):
             if tokens[token_i] in self.map_of_words:
                 index = self.map_of_words[tokens[token_i]]
-                embeddings[token_i,index] = 1
+                embeddings[token_i, index] = 1
             ##dim T x E, T is sequencel length
         return tf.transpose(self.positional(embeddings))
 
-    # ##Allows the system to train its embedding space a la word2vec 
+    # ##Allows the system to train its embedding space a la word2vec
     # def train_embeddings_custom(self,corpus,context_size):
     #     ##This came out of tensorflow docs
     #     pos_skip_grams = []
     #     neg_skip_grams = []
     #     for line in corpus:
     #         words = line.lower().split()
-    #         ##This slowly loops over the entire 
+    #         ##This slowly loops over the entire
     #         for i in range(context_size,len(words) - context_size):
     #             k = 0
     #             while(k < context_size):
@@ -89,29 +90,36 @@ class Pre_Processor(tf.Module):
     #                 pos_skip_grams.append(words[i],words[i+k])
 
 
-
 class TransformerBlock(tf.Module):
     ##Mask necessary for first block in decoder
     def __init__(self, input_dim, embed_dim, num_heads, dropout_rate=0.2, seed=[0, 42]):
         self.attn = MultiHeadAttention(
             input_dim, embed_dim, num_heads, dropout_rate=dropout_rate, seed=seed
         )
-        self.layer_1 = GroupNorm(1,input_dim)
+        self.layer_1 = GroupNorm(1, input_dim)
 
-        self.FF = MLP(input_dim,input_dim,2,15)
-        self.layer_1 = GroupNorm(1,input_dim)
-        self.layer_2 = GroupNorm(1,input_dim)
+        self.FF = MLP(input_dim, input_dim, 2, 15)
+        self.layer_1 = GroupNorm(1, input_dim)
+        self.layer_2 = GroupNorm(1, input_dim)
 
     def __call__(self, x, mask=None, dropout=False):
         attention_out = x + self.attn(x, mask=mask, dropout=dropout)
-        attention_out = tf.expand_dims(attention_out,0)
+        attention_out = tf.expand_dims(attention_out, 0)
         layer1 = self.layer_1(attention_out)
         linear_out = self.FF(layer1)
         return self.layer_2(linear_out)
 
 
 class Decoder(tf.Module):
-    def __init__(self, transformer_dim, embed_dim, num_heads, num_blocks, embeddor=None, Corpus=None):
+    def __init__(
+        self,
+        transformer_dim,
+        embed_dim,
+        num_heads,
+        num_blocks,
+        embeddor=None,
+        Corpus=None,
+    ):
         ##Allows the embeddor to be generated ahead of time
         ## (And potentially trained)
         # self.embeddings= embeddor
@@ -119,13 +127,15 @@ class Decoder(tf.Module):
         #     self.embeddings = Pre_Processor(Corpus, 1000,4,transformer_dim)
         self.transformer_blocks = []
         for i in range(num_blocks):
-            self.transformer_blocks.append(TransformerBlock(transformer_dim, embed_dim, num_heads))
+            self.transformer_blocks.append(
+                TransformerBlock(transformer_dim, embed_dim, num_heads)
+            )
 
     def __call__(self, embeddings, dropout=False):
-        ##Get the input, and then mask it into an upper triangular matrix: 
+        ##Get the input, and then mask it into an upper triangular matrix:
 
         ##No need for a mask into attention as it's built into the call here
-        current = tf.linalg.band_part(embeddings,0,-1)
+        current = tf.linalg.band_part(embeddings, 0, -1)
 
         # mask = tf.ones_like(embeddings)
         # current = self.embeddings(raw_seq)
