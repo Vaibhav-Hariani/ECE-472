@@ -4,3 +4,5 @@ einops
 tqdm
 scikit-learn
 pytest
+black
+isort
