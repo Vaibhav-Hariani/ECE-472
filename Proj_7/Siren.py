@@ -1,16 +1,19 @@
 import math
 
 import tensorflow as tf
-from conv2d import Conv2d
+from linear import Linear
 from adam import Adam
-from mlp import MLP
+from PIL import Image 
 
 
 ##Adapted from https://colab.research.google.com/github/vsitzmann/siren/blob/master/explore_siren.ipynb#scrollTo=3KZZ5jU9zCTK
-def coordinate_grid(sidelen, dim=2):
-    ## Generates a flattened grid of xy coordinates of dimension sidelen
-    tensors = tuple(dim * [tf.linspace(-1, 1, sidelen)])
-    mgrid = tf.stack(tf.meshgrid(tensors), axis=-1)
+def coordinate_grid(xlen, ylen, dim=2):
+    ## Generates a flattened grid of xy coordinates of dimension xlen, ylen
+    tensors = tuple([tf.linspace(-1, 1, xlen)], tf.linspace(-1,1,ylen))
+
+    ##TODO: Debug if the stack & reshape are necessary 
+    mgrid = tf.meshgrid(tensors)
+    mgrid = tf.stack(mgrid, axis=-1)
     mgrid = tf.reshape(mgrid, dim)
     return mgrid
 
@@ -27,8 +30,8 @@ class Siren(tf.Module):
 
     def __init__(
         self,
-        num_inputs,
-        num_outputs,
+        input_dim,
+        output_dim,
         hidden_layer_width,
         hidden_layer_dim,
         initial_omega=30,
@@ -37,42 +40,66 @@ class Siren(tf.Module):
     ):
         rng = tf.random.get_global_generator()
         rng.reset_from_seed(seed)
-        activation = Sine_Activation(hidden_omega)
+        self.input_activation = Sine_Activation(initial_omega)
+        self.hidden_activation = Sine_Activation(hidden_omega)
         ## Modified Linear to accept optional initialization
+        ##***My implementation does not support single layer models
+        initial = rng.uniform(
+            [input_dim, hidden_layer_dim], -1 / input_dim, 1 / input_dim
+        )
+        self.initial_layer = Linear(input_dim, hidden_layer_dim, initial=initial)
+        self.layers = []
+        for x in range(0,hidden_layer_width):
+            range = tf.math.sqrt(6 / hidden_layer_dim) / hidden_omega
+            initial = rng.uniform(
+                [hidden_layer_dim, hidden_layer_dim], -1 * range, range
+            )
+            self.layers.append(
+                Linear(hidden_layer_dim, hidden_layer_dim, initial=initial)
+            )
+
+        output_range = tf.math.sqrt(6 / hidden_layer_dim) / hidden_omega
+        output_initial = rng.uniform([hidden_layer_dim, output_dim], -1 * output_range, output_range)
+        self.layers.append(Linear(hidden_layer_dim, output_dim, initial=output_initial))
 
     def __call__(self, x):
-        pass
-        
+        intermediate = self.input_activation(self.initial_layer(x))
+        for layer in self.layers:
+            intermediate = self.hidden_activation(layer(intermediate))
+        return intermediate
 
+    
+def get_image_tensor(image_path, xlen, ylen):
+    img = Image.open(image_path)
+    array = np.asarray(img)
+    image = tf.image.resize(array, (xlen,ylen))
+    image  = tf.image.per_image_standardization(image)
+    return image
 
 if __name__ == "__main__":
-    import os
     import numpy as np
     from matplotlib import pyplot
     from tqdm import trange
 
+
+
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
 
+    xlen = 960
+    ylen = 540
 
-    BATCH_SIZE = 128
-    NUM_ITERS = 40
-    tf_rng = tf.random.get_global_generator()
-    tf_rng.reset_from_seed(42)
-    np_rng = np.random.default_rng(seed=42)
-
-    print("Making Model")
-
-    # model = Siren(
-    #     input_dims=32,
-    #     output_dim=100,
-    # )
-    model = ''
+    image = get_image_tensor("Test_Card_F.png", xlen, ylen)
+    model = Siren(input_dim=2, output_dim=3, hidden_layer_dim=256, hidden_layer_width=5)
 
     optimizer = Adam(learning_rate=0.001)
 
     # Converting batch_size to epochs
+    BATCH_SIZE = 128
+    NUM_ITERS = 400
+    size = xlen * ylen
+
     epochs = 0
     total_epochs = BATCH_SIZE * NUM_ITERS / size
 
@@ -81,11 +108,16 @@ if __name__ == "__main__":
     n_max = 2
 
     bar = trange(NUM_ITERS)
+    
+    grid = coordinate_grid(xlen,ylen)
+    print(grid)
+
     for i in bar:
-        batch_indices = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
+        truth = image
         with tf.GradientTape() as tape:
             # Cross Entropy Loss Function
-            loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
+            predicted = model(grid)
+            loss = tf.keras.losses.categorical_crossentropy(truth, predicted)
             loss = tf.math.reduce_mean(loss)
 
         epochs += BATCH_SIZE / size
@@ -96,10 +128,7 @@ if __name__ == "__main__":
         grads = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
         if i % 10 == 0:
-            bar.set_description(
-                f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}:"
-            )
+            bar.set_description(f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}:")
             bar.refresh()
 
-    print(
-        "On Test Card F, achieved accuracy of %0.1f%%", 100)
+    print("On Test Card F, achieved accuracy of %0.1f%%", 100)

@@ -1,8 +1,18 @@
 tensorflow
 matplotlib
-einops
+
 tqdm
-scikit-learn
-pytest
+
 black
 isort
+
+## For Project 5 (CIFAR)
+scikit-learn
+
+## For Project 6 (Transformer)
+einops
+pytest
+
+##For Project 7 (Test Card F)
+#should be included
+pillow

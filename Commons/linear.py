@@ -8,7 +8,7 @@ class Linear(tf.Module):
 
         if initial is None:
             stddev = 2 / (num_inputs + num_outputs)
-            initial = rng.normal(shape=[num_inputs, num_outputs], stddev=stddev)        
+            initial = rng.normal(shape=[num_inputs, num_outputs], stddev=stddev)
 
         self.w = tf.Variable(
             initial,
