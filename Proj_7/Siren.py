@@ -2,15 +2,13 @@ import math
 
 import tensorflow as tf
 from linear import Linear
-from adam import Adam
 from PIL import Image 
 
 
 ##Adapted from https://colab.research.google.com/github/vsitzmann/siren/blob/master/explore_siren.ipynb#scrollTo=3KZZ5jU9zCTK
 def coordinate_grid(xlen, ylen, dim=2):
     ## Generates a flattened grid of xy coordinates of dimension xlen, ylen
-    tensors = tuple([tf.linspace(-1, 1, xlen)], tf.linspace(-1,1,ylen))
-
+    tensors = tuple(tf.linspace(-1, 1, xlen), tf.transpose(tf.linspace(-1,1,ylen)))
     ##TODO: Debug if the stack & reshape are necessary 
     mgrid = tf.meshgrid(tensors)
     mgrid = tf.stack(mgrid, axis=-1)
@@ -49,10 +47,10 @@ class Siren(tf.Module):
         )
         self.initial_layer = Linear(input_dim, hidden_layer_dim, initial=initial)
         self.layers = []
-        for x in range(0,hidden_layer_width):
-            range = tf.math.sqrt(6 / hidden_layer_dim) / hidden_omega
+        for x in range(hidden_layer_width):
+            r = tf.math.sqrt(6 / hidden_layer_dim) / hidden_omega
             initial = rng.uniform(
-                [hidden_layer_dim, hidden_layer_dim], -1 * range, range
+                [hidden_layer_dim, hidden_layer_dim], -1 * r, r
             )
             self.layers.append(
                 Linear(hidden_layer_dim, hidden_layer_dim, initial=initial)
@@ -80,7 +78,7 @@ if __name__ == "__main__":
     import numpy as np
     from matplotlib import pyplot
     from tqdm import trange
-
+    from adam import Adam
 
 
     tf_rng = tf.random.get_global_generator()
@@ -90,10 +88,10 @@ if __name__ == "__main__":
     xlen = 960
     ylen = 540
 
-    image = get_image_tensor("Test_Card_F.png", xlen, ylen)
+    image = get_image_tensor("Proj_7/Test_Card_F.png", xlen, ylen)
     model = Siren(input_dim=2, output_dim=3, hidden_layer_dim=256, hidden_layer_width=5)
 
-    optimizer = Adam(learning_rate=0.001)
+    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
 
     # Converting batch_size to epochs
     BATCH_SIZE = 128
@@ -110,10 +108,8 @@ if __name__ == "__main__":
     bar = trange(NUM_ITERS)
     
     grid = coordinate_grid(xlen,ylen)
-    print(grid)
-
+    truth = image    
     for i in bar:
-        truth = image
         with tf.GradientTape() as tape:
             # Cross Entropy Loss Function
             predicted = model(grid)
@@ -126,9 +122,13 @@ if __name__ == "__main__":
             1 + tf.math.cos(epochs * math.pi / total_epochs)
         )
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        optimizer.train(
+            grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t)
         if i % 10 == 0:
             bar.set_description(f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}:")
             bar.refresh()
+    
+    output_img = model(grid)
+    loss = tf.keras.losses.categorical_crossentropy(truth, predicted)
 
     print("On Test Card F, achieved accuracy of %0.1f%%", 100)
