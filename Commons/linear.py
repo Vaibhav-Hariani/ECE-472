@@ -3,13 +3,15 @@ import tensorflow as tf
 
 ##Created by Professor Curro
 class Linear(tf.Module):
-    def __init__(self, num_inputs, num_outputs, bias=True):
+    def __init__(self, num_inputs, num_outputs, bias=True, initial=None):
         rng = tf.random.get_global_generator()
 
-        stddev = 2 / (num_inputs + num_outputs)
+        if initial is None:
+            stddev = 2 / (num_inputs + num_outputs)
+            initial = rng.normal(shape=[num_inputs, num_outputs], stddev=stddev)        
 
         self.w = tf.Variable(
-            rng.normal(shape=[num_inputs, num_outputs], stddev=stddev),
+            initial,
             trainable=True,
             name="Linear/w",
         )
