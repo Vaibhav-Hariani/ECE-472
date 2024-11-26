@@ -12,7 +12,7 @@ def unpickle(file: str) -> dict:
 
 
 def render_img(image, path, label=""):
-    path = os.path.join("testing_imgs", path)
+    # path = os.path.join("testing_imgs", path)
     ##Testing to make sure images are generated properly
     plt.imshow(image)
     plt.ylabel(label)
