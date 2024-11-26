@@ -52,7 +52,9 @@ class Gen_Siren(tf.Module):
         self.Generator = ResNet(
             xlen,
             output_dim=params,
+            conv_dims=3,
             hidden_lin_width=500,
+            num_lin_layers=7,
             lin_activation=tf.nn.leaky_relu,
             lin_output_activation=tf.nn.relu,
         )
@@ -127,11 +129,11 @@ if __name__ == "__main__":
     images = np.transpose(images, (0, 2, 3, 1))
 
     model = Gen_Siren(
-        siren_in=2, siren_out=3, hidden_layer_dim=32, hidden_layer_width=3
+        siren_in=2, siren_out=3, hidden_layer_dim=64, hidden_layer_width=3
     )
 
     # optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
-    optimizer = tf.optimizers.AdamW(learning_rate=0.001)
+    optimizer = tf.optimizers.AdamW(learning_rate=0.003)
 
     # Train on one image at a time
     BATCH_SIZE = 1
@@ -156,6 +158,8 @@ if __name__ == "__main__":
             # Cross Entropy Loss Function
             predicted = model(grid, image)
             predicted = tf.reshape(predicted, [1,xlen, ylen, 3])
+            # predicted = (predicted + 1 / 2)
+            # image = (image + 1 / 2)
             # loss = tf.keras.losses.categorical_crossentropy(image, predicted)
             loss = (predicted - image)**2
             loss = tf.math.reduce_mean(loss)
