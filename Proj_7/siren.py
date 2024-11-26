@@ -3,17 +3,17 @@ import math
 import tensorflow as tf
 from linear import Linear
 from PIL import Image 
-
+import os
 
 ##Adapted from https://colab.research.google.com/github/vsitzmann/siren/blob/master/explore_siren.ipynb#scrollTo=3KZZ5jU9zCTK
 def coordinate_grid(xlen, ylen, dim=2):
     ## Generates a flattened grid of xy coordinates of dimension xlen, ylen
-    tensors = tuple(tf.linspace(-1, 1, xlen), tf.transpose(tf.linspace(-1,1,ylen)))
+    tensors = (tf.linspace(-1, 1, xlen), tf.linspace(-1,1,ylen))
     ##TODO: Debug if the stack & reshape are necessary 
-    mgrid = tf.meshgrid(tensors)
+    mgrid = tf.meshgrid(tensors[0],tensors[1])
     mgrid = tf.stack(mgrid, axis=-1)
-    mgrid = tf.reshape(mgrid, dim)
-    return mgrid
+    mgrid = tf.reshape(mgrid, [-1,dim])
+    return tf.cast(mgrid,tf.float32)
 
 
 class Sine_Activation(tf.Module):
@@ -32,14 +32,14 @@ class Siren(tf.Module):
         output_dim,
         hidden_layer_width,
         hidden_layer_dim,
-        initial_omega=30,
+        initial_omega=30.0,
         hidden_omega=30.0,
         seed=42,
     ):
         rng = tf.random.get_global_generator()
         rng.reset_from_seed(seed)
-        self.input_activation = Sine_Activation(initial_omega)
-        self.hidden_activation = Sine_Activation(hidden_omega)
+        self.i_omega = initial_omega
+        self.hidden_omega = hidden_omega
         ## Modified Linear to accept optional initialization
         ##***My implementation does not support single layer models
         initial = rng.uniform(
@@ -61,22 +61,33 @@ class Siren(tf.Module):
         self.layers.append(Linear(hidden_layer_dim, output_dim, initial=output_initial))
 
     def __call__(self, x):
-        intermediate = self.input_activation(self.initial_layer(x))
-        for layer in self.layers:
-            intermediate = self.hidden_activation(layer(intermediate))
-        return intermediate
+        intermediate = tf.math.sin(self.i_omega * self.initial_layer(x))
+        for layer in self.layers[:-1]:
+            intermediate = tf.math.sin(self.hidden_omega * layer(intermediate))
+        return self.layers[-1](intermediate)
 
     
 def get_image_tensor(image_path, xlen, ylen):
     img = Image.open(image_path)
     array = np.asarray(img)
     image = tf.image.resize(array, (xlen,ylen))
-    image  = tf.image.per_image_standardization(image)
+    ##Image is now bound between 0 & 2
+    image  = (image / 128.0)
+    ##Image is now bound between -1 * 1
+    image = image - 1
     return image
+
+def render_img(image, path, label=""):
+    # path = os.path.join("testing_imgs", path)
+    ##Testing to make sure images are generated properly
+    plt.imshow(image)
+    plt.ylabel(label)
+    plt.savefig(path)
+
 
 if __name__ == "__main__":
     import numpy as np
-    from matplotlib import pyplot
+    import matplotlib.pyplot as plt
     from tqdm import trange
     from adam import Adam
 
@@ -85,50 +96,58 @@ if __name__ == "__main__":
     tf_rng.reset_from_seed(42)
     np_rng = np.random.default_rng(seed=42)
 
-    xlen = 960
-    ylen = 540
+    ylen = 365
+    xlen = 273
 
-    image = get_image_tensor("Proj_7/Test_Card_F.png", xlen, ylen)
-    model = Siren(input_dim=2, output_dim=3, hidden_layer_dim=256, hidden_layer_width=5)
+    image = get_image_tensor("Proj_7/Test_Card_F.jpg", xlen, ylen)
+    model = Siren(input_dim=2, output_dim=3, hidden_layer_dim=100, hidden_layer_width=3)
 
-    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    # optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    optimizer = tf.optimizers.AdamW(learning_rate=0.001)
 
     # Converting batch_size to epochs
-    BATCH_SIZE = 128
-    NUM_ITERS = 400
-    size = xlen * ylen
+    NUM_ITERS = 500
 
     epochs = 0
-    total_epochs = BATCH_SIZE * NUM_ITERS / size
+    total_epochs = NUM_ITERS
 
-    print("Running for %0.4f epochs" % total_epochs)
+    print("Running for %0.1f epochs" % total_epochs)
     n_min = 0.1
     n_max = 2
 
     bar = trange(NUM_ITERS)
     
     grid = coordinate_grid(xlen,ylen)
-    truth = image    
+    truth = image
+    render_img((truth + 1) / 2, "truth.png")
+    truth = tf.reshape(truth, [-1,3])
     for i in bar:
         with tf.GradientTape() as tape:
             # Cross Entropy Loss Function
             predicted = model(grid)
-            loss = tf.keras.losses.categorical_crossentropy(truth, predicted)
-            loss = tf.math.reduce_mean(loss)
+            # predicted = tf.reshape(predicted, [xlen,ylen,3])
+            loss = tf.math.reduce_mean((predicted - truth)**2)
 
-        epochs += BATCH_SIZE / size
+        epochs += 1
         # Cosine annealing
         n_t = n_min + (n_max - n_min) * (
             1 + tf.math.cos(epochs * math.pi / total_epochs)
         )
         grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.train(
-            grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t)
-        if i % 10 == 0:
-            bar.set_description(f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}:")
+        # optimizer.train(grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t)
+
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
+        if i % 3 == 0:
+            bar.set_description(f"Step {i}; Loss => {loss.numpy():0.4f}:")
             bar.refresh()
     
     output_img = model(grid)
-    loss = tf.keras.losses.categorical_crossentropy(truth, predicted)
 
-    print("On Test Card F, achieved accuracy of %0.1f%%", 100)
+    flattened = tf.reshape(output_img, [xlen,ylen,3])
+    ##Convert this image to a range from 0 - 2 & then 0 -1
+    flattened = (flattened + 1) / 2
+    render_img(flattened, "model_output.png")
+
+    # loss = tf.math.reduce_mean((flattened - truth)**2)
+    print("On Test Card F, achieved accuracy of %0.1f", loss.numpy())
