@@ -3,6 +3,7 @@ from conv2d import Conv2d
 from groupnorm import GroupNorm
 from mlp import MLP
 
+
 class ResidualBlock(tf.Module):
     def __init__(
         self,
@@ -94,3 +95,19 @@ class ResNet(tf.Module):
             output_activation=lin_output_activation,
             dropout_rate=dropout_rate,
         )
+
+    def __call__(self, input, dropout=False):
+        current = input
+        for layer in self.res_layers:
+            current = layer(current, dropout)
+        # Define the max pooling operation
+
+        pooled_out = tf.nn.avg_pool2d(
+            current,
+            ksize=self.pool_dims,
+            strides=self.pool_dims,
+            padding=self.padding,
+        )
+        perceptron_in = tf.reshape(pooled_out, (pooled_out.shape[0], -1))
+        # Flattens for perceptron
+        return self.output_perceptron(perceptron_in, dropout)

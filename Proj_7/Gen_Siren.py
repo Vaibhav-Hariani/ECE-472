@@ -4,6 +4,7 @@ import tensorflow as tf
 from PIL import Image
 import os
 from resnet_conv import ResNet
+
 # Adapted from https://colab.research.google.com/github/vsitzmann/siren/blob/master/explore_siren.ipynb#scrollTo=3KZZ5jU9zCTK
 
 
@@ -41,13 +42,17 @@ class Gen_Siren(tf.Module):
         self.resnet_reformat_mat.append((hidden_layer_dim, siren_out))
 
         params = siren_in * hidden_layer_dim + hidden_layer_dim
-        hidden_layer_width*hidden_layer_dim+siren_in+siren_out
+        hidden_layer_width * hidden_layer_dim + siren_in + siren_out
 
         rng = tf.random.get_global_generator()
         rng.reset_from_seed(seed)
 
         self.Generator = ResNet(
-            xlen, output_dim=params, lin_activation=tf.nn.leaky_relu, lin_output_activation=tf.nn.relu)
+            xlen,
+            output_dim=params,
+            lin_activation=tf.nn.leaky_relu,
+            lin_output_activation=tf.nn.relu,
+        )
         self.i_omega = initial_omega
         self.hidden_omega = hidden_omega
 
@@ -56,33 +61,35 @@ class Gen_Siren(tf.Module):
         i = 0
         intermediate = siren_inputs
         for layer in self.resnet_reformat_mat[-1]:
-            linear_layer = resnet_out[i:layer[0]*layer[1]] 
-            i+= layer[0]+layer[1]
-            bias_layer = resnet_out[i:layer[1]]
+            linear_layer = resnet_out[i : layer[0] * layer[1]]
+            i += layer[0] + layer[1]
+            bias_layer = resnet_out[i : layer[1]]
             i += layer[1]
-            linear_layer = tf.reshape(linear_layer (layer[0], layer[1]))
-            bias_layer = tf.reshape(bias_layer (1, layer[1]))
-            intermediate = tf.math.sin(self.hidden_omega * (intermediate @ linear_layer + bias_layer))            
+            linear_layer = tf.reshape(linear_layer(layer[0], layer[1]))
+            bias_layer = tf.reshape(bias_layer(1, layer[1]))
+            intermediate = tf.math.sin(
+                self.hidden_omega * (intermediate @ linear_layer + bias_layer)
+            )
         ##Final layer is not sined
-        linear_layer = resnet_out[i:layer[-1][0]*layer[-1][1]] 
-        i+= layer[-1][0]+layer[-1][1]
-        bias_layer = resnet_out[i:layer[-1][1]]
+        linear_layer = resnet_out[i : layer[-1][0] * layer[-1][1]]
+        i += layer[-1][0] + layer[-1][1]
+        bias_layer = resnet_out[i : layer[-1][1]]
         i += layer[-1][1]
-        linear_layer = tf.reshape(linear_layer (layer[-1][0], layer[-1][1]))
-        bias_layer = tf.reshape(bias_layer (1, layer[-1][1]))
-        intermediate = intermediate @ linear_layer + bias_layer            
+        linear_layer = tf.reshape(linear_layer(layer[-1][0], layer[-1][1]))
+        bias_layer = tf.reshape(bias_layer(1, layer[-1][1]))
+        intermediate = intermediate @ linear_layer + bias_layer
         return intermediate
 
-def get_image_tensor(image_path, xlen, ylen):
-    img = Image.open(image_path)
-    array = np.asarray(img)
-    image = tf.image.resize(array, (xlen, ylen))
+
+def get_image_tensor(img, xlen, ylen):
+    # img = Image.open(image_path)
+    # array = np.asarray(img)
+    image = tf.image.resize(img, (xlen, ylen))
     # Image is now bound between 0 & 2
-    image = (image / 128.0)
+    image = image / 128.0
     # Image is now bound between -1 * 1
     image = image - 1
     return image
-
 
 
 if __name__ == "__main__":
@@ -115,17 +122,16 @@ if __name__ == "__main__":
     images = np.reshape(raw_dict[b"data"], IMG_DIMS)
     images = np.transpose(images, (0, 2, 3, 1))
 
-    model = Gen_Siren(input_dim=2, output_dim=3,
-                  hidden_layer_dim=32, hidden_layer_width=3)
+    model = Gen_Siren(
+        siren_in=2, siren_out=3, hidden_layer_dim=32, hidden_layer_width=3
+    )
 
     # optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
     optimizer = tf.optimizers.AdamW(learning_rate=0.001)
 
-    
     ##Train on one image at a time
     BATCH_SIZE = 1
     NUM_ITERS = 40
-    
 
     epochs = 0
     total_epochs = NUM_ITERS
@@ -135,40 +141,40 @@ if __name__ == "__main__":
     n_max = 2
 
     bar = trange(NUM_ITERS)
-
-
-
     grid = coordinate_grid(xlen, ylen)
-    truth = image
-    render_img((truth + 1) / 2, "truth.png")
-    truth = tf.reshape(truth, [-1, 3])
+    # truth = image
+    # render_img((truth + 1) / 2, "truth.png")
+    # truth = tf.reshape(truth, [-1, 3])
     for i in bar:
+        image_id = np_rng.integers(low=0, high=size, size=BATCH_SIZE).T
+        image = get_image_tensor(images[image_id], xlen, ylen)
         with tf.GradientTape() as tape:
             # Cross Entropy Loss Function
-            predicted = model(grid)
-            # predicted = tf.reshape(predicted, [xlen,ylen,3])
-            loss = tf.math.reduce_mean((predicted - truth)**2)
+            predicted = model(grid, image)
+            predicted = tf.reshape(predicted, [xlen, ylen, 3])
+            loss = tf.keras.losses.categorical_crossentropy(image, predicted)
+            # loss = (predicted - image)**2
+            loss = tf.math.reduce_mean(loss)
 
-        epochs += 1
-        # Cosine annealing
-        n_t = n_min + (n_max - n_min) * (
-            1 + tf.math.cos(epochs * math.pi / total_epochs)
-        )
+        # epochs += 1
+        # # Cosine annealing
+        # n_t = n_min + (n_max - n_min) * (
+        #     1 + tf.math.cos(epochs * math.pi / total_epochs)
+        # )
         grads = tape.gradient(loss, model.trainable_variables)
         # optimizer.train(grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=n_t)
-
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
-
-        if i % 3 == 0:
+        if i % 10 == 0:
             bar.set_description(f"Step {i}; Loss => {loss.numpy():0.4f}:")
             bar.refresh()
 
-    output_img = model(grid)
-
+    render_img(images[11], "final_truth.png")
+    final_img = get_image_tensor(images[11])
+    output_img = model(grid, final_img)
     flattened = tf.reshape(output_img, [xlen, ylen, 3])
     # Convert this image to a range from 0 - 2 & then 0 -1
     flattened = (flattened + 1) / 2
-    render_img(flattened, "model_output.png")
+    render_img(flattened, "model_output_general.png")
 
     # loss = tf.math.reduce_mean((flattened - truth)**2)
     print("On Test Card F, achieved accuracy of %0.1f", loss.numpy())

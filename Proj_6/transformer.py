@@ -141,8 +141,8 @@ class Decoder(tf.Module):
             current = block(current, dropout)
         return current
 
+
 # if __name__ == "__main__":
 #     Corpus = "Now this is a story all about how My life got flipped turned upside down and Id like"
 #     Embeddings = Pre_Processor(Corpus, 100, 4, transformer_seq_length=20)
 #     Transformer = Decoder(Embeddings.embeddings_size, 20, 5, 1)
-
