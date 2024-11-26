@@ -52,6 +52,7 @@ class Gen_Siren(tf.Module):
         self.Generator = ResNet(
             xlen,
             output_dim=params,
+            hidden_lin_width=500,
             lin_activation=tf.nn.leaky_relu,
             lin_output_activation=tf.nn.relu,
         )
@@ -130,7 +131,7 @@ if __name__ == "__main__":
     )
 
     # optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
-    optimizer = tf.optimizers.AdamW(learning_rate=0.005)
+    optimizer = tf.optimizers.AdamW(learning_rate=0.001)
 
     # Train on one image at a time
     BATCH_SIZE = 1
