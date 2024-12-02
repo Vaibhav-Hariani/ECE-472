@@ -182,7 +182,7 @@ if __name__ == "__main__":
         labels.append(raw_dict[b"labels"] * (num_clones + 1))
 
     VALIDATE = True
-    VALIDATE_SPLIT = 0.95
+    VALIDATE_SPLIT = 0.1
     TEST = True
 
     ##Creating validation set out of a slice of the last batch: This is 500 images.
@@ -202,8 +202,8 @@ if __name__ == "__main__":
     labels = np.concatenate(labels, axis=0)
     restruct_labels = restructure(labels)
 
-    validation_images = batch_5_imgs[split_len:]
-    validation_labels = np.array(batch_5_labels)[split_len:]
+    # validation_images = batch_5_imgs[split_len:]
+    # validation_labels = np.array(batch_5_labels)[split_len:]
 
     # ##generating a set of labelled images.
     # k = 5
@@ -213,13 +213,12 @@ if __name__ == "__main__":
     # for i in range(k):
     #     render_img(image=images[i],path=str(i), label=label_strings[labels[i]])
 
-    BATCH_SIZE = 128
+    BATCH_SIZE = 16
     size = int(labels.size * VALIDATE_SPLIT)
 
-    # NUM_ITERS = 4000
-    epochs = 0
-    total_epochs = 20
-    NUM_ITERS = int(total_epochs * size / BATCH_SIZE)
+    NUM_ITERS = 400
+    total_epochs = 10
+    # NUM_ITERS = int(total_epochs * size / BATCH_SIZE)
 
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
@@ -242,8 +241,8 @@ if __name__ == "__main__":
         channel_scales=[3, 5, 16, 32, 64, 3, 1],
     )
 
-    optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
-    # optimizer = tf.optimizers.AdamW(learning_rate=0.001)
+    # optimizer = Adam(size=len(model.trainable_variables), step_size=0.001)
+    optimizer = tf.optimizers.AdamW(learning_rate=0.001)
 
     ##Converting batch_size to epochs
     epochs = 0
@@ -268,34 +267,35 @@ if __name__ == "__main__":
             loss = tf.keras.losses.categorical_crossentropy(batch_labels, predicted)
             loss = tf.math.reduce_mean(loss)
 
-        epochs += BATCH_SIZE / size
-        # ##Cosine annealing
-        n_t = n_min + (n_max - n_min) * (
-            1 + tf.math.cos(epochs * math.pi / total_epochs)
-        )
+        # epochs += BATCH_SIZE / size
+        # # ##Cosine annealing
+        # n_t = n_min + (n_max - n_min) * (
+        #     1 + tf.math.cos(epochs * math.pi / total_epochs)
+        # )
         grads = tape.gradient(loss, model.trainable_variables)
         # optimizer.apply_gradients(zip(grads, model.trainable_variables))
-        optimizer.train(
-            grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=0.1
-        )
+        # optimizer.train(
+        #     grads=grads, vars=model.trainable_variables, adamW=True, decay_scale=0.1
+        # )
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
         if i % 3 == 0:
-            if i % 240 == 0:
-                ##Mini validation to see performance
-                model_output = np.argmax(model(validation_images), axis=1)
-                accuracy = np.sum(model_output == validation_labels) / (
-                    validation_labels.size
-                )
+            # if i % 240 == 0:
+            #     ##Mini validation to see performance
+            #     model_output = np.argmax(model(validation_images), axis=1)
+            #     accuracy = np.sum(model_output == validation_labels) / (
+            #         validation_labels.size
+            #     )
             bar.set_description(
-                f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}, accuracy => {accuracy:0.3f}:"
+                f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}:"
             )
             bar.refresh()
 
     # model_output = np.argmax(model(validation_images), axis=1)
     # accuracy = np.sum(model_output == validation_labels) / validation_labels.size
     # print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
-    model_output = np.argmax(model(validation_images), axis=1)
-    accuracy = np.sum(model_output == validation_labels) / validation_labels.size
-    print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
+    # model_output = np.argmax(model(validation_images), axis=1)
+    # accuracy = np.sum(model_output == validation_labels) / validation_labels.size
+    # print("On validation set, achieved accuracy of %.1f%%" % (100 * accuracy))
 
     # fig, ax1 = plt.subplots(1, 1)
     if TEST:
