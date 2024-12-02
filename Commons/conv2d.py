@@ -1,6 +1,7 @@
 import tensorflow as tf
 from mlp import MLP
 
+
 class Conv2d(tf.Module):
     def __init__(self, dim, in_channel=1, out_channel=1, dropout_rate=0, seed=[42, 0]):
 
@@ -21,6 +22,7 @@ class Conv2d(tf.Module):
                 conv, self.dropout_rate, seed=self.seed
             )
         return conv
+
 
 class CNN(tf.Module):
 

@@ -1,11 +1,9 @@
-import math
+import os
 
 import tensorflow as tf
-from PIL import Image
-import os
-from resnet_conv import ResNet
 from linear import Linear
-from conv2d import CNN
+from resnet_conv import ResNet
+
 
 # Adapted from https://colab.research.google.com/github/vsitzmann/siren/blob/master/explore_siren.ipynb#scrollTo=3KZZ5jU9zCTK
 def coordinate_grid(xlen, ylen, dim=2):
@@ -59,9 +57,7 @@ class Gen_Siren(tf.Module):
         self.hidden_omega = hidden_omega
 
         ##Siren initialization here
-        initial = rng.uniform(
-            [siren_in, hidden_layer_dim], -1 / siren_in, 1 / siren_in
-        )
+        initial = rng.uniform([siren_in, hidden_layer_dim], -1 / siren_in, 1 / siren_in)
         self.initial_layer = Linear(siren_in, hidden_layer_dim, initial=initial)
         self.layers = []
         for x in range(hidden_layer_width):
@@ -76,14 +72,13 @@ class Gen_Siren(tf.Module):
         )
         self.layers.append(Linear(hidden_layer_dim, siren_out, initial=output_initial))
 
-
     def __call__(self, siren_inputs, resnet_inputs):
         resnet_out = self.Generator(resnet_inputs)
         i = 0
         intermediate = tf.math.sin(self.i_omega * self.initial_layer(siren_inputs))
         for layer in self.layers[:-1]:
             current = layer(intermediate)
-            current = current * resnet_out[:,i] + resnet_out[:,i+1]
+            current = current * resnet_out[:, i] + resnet_out[:, i + 1]
             i += 2
             intermediate = tf.math.sin(current)
 
@@ -92,9 +87,9 @@ class Gen_Siren(tf.Module):
         ##bounding it from 0 to 1
 
         # return self.layers[-1](intermediate)
-        
+
         # return tf.nn.sigmoid(self.layers[-1](intermediate))
-        return resnet_out[:,-2] * self.layers[-1](intermediate) + resnet_out[:,-1]
+        return resnet_out[:, -2] * self.layers[-1](intermediate) + resnet_out[:, -1]
 
 
 def get_image_tensor(img, xlen, ylen):
@@ -110,12 +105,11 @@ def get_image_tensor(img, xlen, ylen):
 
 
 if __name__ == "__main__":
-    import numpy as np
     import matplotlib.pyplot as plt
-    from CIFAR_UTILS import render_img, unpickle
-
-    from tqdm import trange
+    import numpy as np
     from adam import Adam
+    from CIFAR_UTILS import render_img, unpickle
+    from tqdm import trange
 
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
@@ -168,11 +162,11 @@ if __name__ == "__main__":
         with tf.GradientTape() as tape:
             # Cross Entropy Loss Function
             predicted = model(grid, image)
-            predicted = tf.reshape(predicted, [1,xlen, ylen, 3])
+            predicted = tf.reshape(predicted, [1, xlen, ylen, 3])
             # predicted = (predicted + 1 / 2)
             # image = (image + 1 / 2)
             # loss = tf.keras.losses.categorical_crossentropy(image, predicted)
-            loss = (predicted - image)**2
+            loss = (predicted - image) ** 2
             loss = tf.math.reduce_mean(loss)
 
         # epochs += 1
@@ -189,15 +183,15 @@ if __name__ == "__main__":
 
     render_img(images[0], "final_truth.png")
 
-    final_img = get_image_tensor(images[[0]],xlen,ylen)
-    
+    final_img = get_image_tensor(images[[0]], xlen, ylen)
+
     output_img = model(grid, final_img)
     model_out = tf.reshape(output_img, [xlen, ylen, 3])
     # Convert this image to a range from 0 - 2 & then 0 -1
     model_out = (model_out + 1) / 2
     render_img(model_out, "model_output_general.png")
 
-    loss = (final_img - model_out)**2
+    loss = (final_img - model_out) ** 2
     loss = tf.math.reduce_mean(loss)
     # loss = tf.math.reduce_mean((flattened - truth)**2)
     print(f"On New sample, achieved accuracy of {loss.numpy():0.4f}")

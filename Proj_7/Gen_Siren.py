@@ -1,8 +1,8 @@
 import math
+import os
 
 import tensorflow as tf
 from PIL import Image
-import os
 from resnet_conv import ResNet
 
 # Adapted from https://colab.research.google.com/github/vsitzmann/siren/blob/master/explore_siren.ipynb#scrollTo=3KZZ5jU9zCTK
@@ -38,13 +38,17 @@ class Gen_Siren(tf.Module):
         # Dimensionality of each of the blocks on the outset of the resnet
         self.resnet_reformat_mat = [(siren_in, hidden_layer_dim)]
         for i in range(hidden_layer_width):
-            self.resnet_reformat_mat.append(
-                (hidden_layer_dim, hidden_layer_dim))
+            self.resnet_reformat_mat.append((hidden_layer_dim, hidden_layer_dim))
         self.resnet_reformat_mat.append((hidden_layer_dim, siren_out))
 
-        params = (siren_in * hidden_layer_dim + hidden_layer_dim) + (hidden_layer_dim * \
-            hidden_layer_width * hidden_layer_dim + hidden_layer_dim * \
-            hidden_layer_width) + (hidden_layer_dim*siren_out + siren_out)
+        params = (
+            (siren_in * hidden_layer_dim + hidden_layer_dim)
+            + (
+                hidden_layer_dim * hidden_layer_width * hidden_layer_dim
+                + hidden_layer_dim * hidden_layer_width
+            )
+            + (hidden_layer_dim * siren_out + siren_out)
+        )
 
         rng = tf.random.get_global_generator()
         rng.reset_from_seed(seed)
@@ -66,9 +70,9 @@ class Gen_Siren(tf.Module):
         i = 0
         intermediate = siren_inputs
         for layer in self.resnet_reformat_mat[:-1]:
-            linear_layer = resnet_out[0, i: i+layer[0] * layer[1]]
+            linear_layer = resnet_out[0, i : i + layer[0] * layer[1]]
             i += layer[0] * layer[1]
-            bias_layer = resnet_out[0, i: i+layer[1]]
+            bias_layer = resnet_out[0, i : i + layer[1]]
             i += layer[1]
             linear_layer = tf.reshape(linear_layer, (layer[0], layer[1]))
             bias_layer = tf.reshape(bias_layer, (1, layer[1]))
@@ -77,9 +81,9 @@ class Gen_Siren(tf.Module):
             )
         # Final layer is not sined
         layer = self.resnet_reformat_mat[-1]
-        linear_layer = resnet_out[0, i: i+layer[0] * layer[1]]
+        linear_layer = resnet_out[0, i : i + layer[0] * layer[1]]
         i += layer[0] * layer[1]
-        bias_layer = resnet_out[0, i: i+layer[1]]
+        bias_layer = resnet_out[0, i : i + layer[1]]
         i += layer[1]
         linear_layer = tf.reshape(linear_layer, (layer[0], layer[1]))
         bias_layer = tf.reshape(bias_layer, (1, layer[1]))
@@ -99,12 +103,11 @@ def get_image_tensor(img, xlen, ylen):
 
 
 if __name__ == "__main__":
-    import numpy as np
     import matplotlib.pyplot as plt
-    from CIFAR_UTILS import render_img, unpickle
-
-    from tqdm import trange
+    import numpy as np
     from adam import Adam
+    from CIFAR_UTILS import render_img, unpickle
+    from tqdm import trange
 
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)
@@ -157,11 +160,11 @@ if __name__ == "__main__":
         with tf.GradientTape() as tape:
             # Cross Entropy Loss Function
             predicted = model(grid, image)
-            predicted = tf.reshape(predicted, [1,xlen, ylen, 3])
+            predicted = tf.reshape(predicted, [1, xlen, ylen, 3])
             # predicted = (predicted + 1 / 2)
             # image = (image + 1 / 2)
             # loss = tf.keras.losses.categorical_crossentropy(image, predicted)
-            loss = (predicted - image)**2
+            loss = (predicted - image) ** 2
             loss = tf.math.reduce_mean(loss)
 
         # epochs += 1
@@ -178,15 +181,15 @@ if __name__ == "__main__":
 
     render_img(images[0], "final_truth.png")
 
-    final_img = get_image_tensor(images[[0]],xlen,ylen)
-    
+    final_img = get_image_tensor(images[[0]], xlen, ylen)
+
     output_img = model(grid, final_img)
     model_out = tf.reshape(output_img, [xlen, ylen, 3])
     # Convert this image to a range from 0 - 2 & then 0 -1
     model_out = (model_out + 1) / 2
     render_img(model_out, "model_output_general.png")
 
-    loss = (final_img - model_out)**2
+    loss = (final_img - model_out) ** 2
     loss = tf.math.reduce_mean(loss)
     # loss = tf.math.reduce_mean((flattened - truth)**2)
     print(f"On New sample, achieved accuracy of {loss.numpy():0.4f}")

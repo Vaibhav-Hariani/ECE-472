@@ -285,9 +285,7 @@ if __name__ == "__main__":
             #     accuracy = np.sum(model_output == validation_labels) / (
             #         validation_labels.size
             #     )
-            bar.set_description(
-                f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}:"
-            )
+            bar.set_description(f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}:")
             bar.refresh()
 
     # model_output = np.argmax(model(validation_images), axis=1)

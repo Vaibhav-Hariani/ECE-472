@@ -3,7 +3,6 @@ import math
 import tensorflow as tf
 from linear import Linear
 from PIL import Image
-import os
 
 
 ##Adapted from https://colab.research.google.com/github/vsitzmann/siren/blob/master/explore_siren.ipynb#scrollTo=3KZZ5jU9zCTK
@@ -88,10 +87,10 @@ def render_img(image, path, label=""):
 
 
 if __name__ == "__main__":
-    import numpy as np
     import matplotlib.pyplot as plt
-    from tqdm import trange
+    import numpy as np
     from adam import Adam
+    from tqdm import trange
 
     tf_rng = tf.random.get_global_generator()
     tf_rng.reset_from_seed(42)

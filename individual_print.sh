@@ -7,5 +7,5 @@ for var in "$@"
             vim -c "hardcopy > $output.ps" -c wq $var
             echo "$output.ps $output.pdf"
             ps2pdf $output.ps $output.pdf
-            rm Submissions/*.ps
     done
+        rm Submissions/*.ps

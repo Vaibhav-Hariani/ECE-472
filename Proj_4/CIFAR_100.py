@@ -269,9 +269,7 @@ if __name__ == "__main__":
             #     top_5_accuracy = 100 * top_k_accuracy_score(
             #         validation_labels, model_output, k=5
             #     )
-            bar.set_description(
-                f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}"
-            )
+            bar.set_description(f"epoch {epochs:0.4f}; Loss => {loss.numpy():0.4f}")
             bar.refresh()
 
     model_path = os.path.join("Proj_4", "CIFAR_100/1/")
