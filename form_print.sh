@@ -11,6 +11,6 @@ for var in "$@"
             # echo "$output.ps $output.pdf"
             ps2pdf $output.ps $output.pdf
         done
+    rm Submissions/$var/*.ps
     done
-    rm Submissions/*/*.ps
 #  pdfunite Submissions/*.py.pdf Submissions/Combined_Submission.pdf
