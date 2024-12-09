@@ -1,18 +1,21 @@
 tensorflow
 matplotlib
-
 tqdm
-
 black
 isort
 
-## For Project 5 (CIFAR)
+## For Project 4 (CIFAR)
 scikit-learn
+
+## For Project 5 & Project 8 (Huggingface dataset)
+datasets
 
 ## For Project 6 (Transformer)
 einops
 pytest
 
 ##For Project 7 (Test Card F)
-#should be included
 pillow
+
+#For Project 8
+chromadb
