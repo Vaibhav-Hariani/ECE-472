@@ -19,3 +19,8 @@ pillow
 
 #For Project 8
 chromadb
+
+##Required for monarch bert:
+torch
+# git+https://github.com/HazyResearch/flash-fft-conv.git#subdirectory=csrc/flashfftconv
+# git+https://github.com/HazyResearch/flash-fft-conv.git
