@@ -31,28 +31,33 @@ if __name__ == "__main__":
     from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
     SEQ_LEN = 2048
-    EXPECTED_LEN = 10
+    
 
     persist_directory = "db"
 
     dataset = load_dataset("hazyresearch/LoCoV1-Documents")["test"]
     chroma_client = chromadb.PersistentClient(path=persist_directory)
 
+    EXPECTED_LEN = dataset.shape[0]
+
     Embedder = Embed()
     db = chroma_client.create_collection(
         name="search_corpus", get_or_create=True, embedding_function=Embedder)
 
+    print("Embedding document now")
     if(db.count() < EXPECTED_LEN):
-        batch_size = 5
+        batch_size = 1
         for i in range(db.count(),EXPECTED_LEN,batch_size):
             batch = dataset[i:i+batch_size]
             db.add(ids=batch['pid'],documents=batch['passage'])
-            print("Embedding document %d to %d" % (i, i + batch_size))
+            if i %5 == 0:
+                print("Embedding document %d" % (i))
+
     else:
         print("Database Already Loaded")
         ##Means the model hasn't been filled yet
 
-    print("Proceeding to Inference:")
+    print("Ready for Inference:")
     # search_term = input("Search Query: ")
     # results = db.query(query_texts=search_term)
     # print(results['ids'])
