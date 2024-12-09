@@ -21,6 +21,5 @@ pillow
 chromadb
 
 ##Required for monarch bert:
+transformers
 torch
-# git+https://github.com/HazyResearch/flash-fft-conv.git#subdirectory=csrc/flashfftconv
-# git+https://github.com/HazyResearch/flash-fft-conv.git
