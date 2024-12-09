@@ -54,13 +54,15 @@ if __name__ == "__main__":
             if i %5 == 0:
                 print("Embedding document %d", i)
 
-    else:
-        print("Database Already Loaded")
-        ##Means the model hasn't been filled yet
+    # else:
+    #     print("Database Already Loaded")
+    #     ##Means the model hasn't been filled yet
 
     print("Ready for Inference:")
-    # search_term = input("Search Query: ")
-    # results = db.query(query_texts=search_term)
-    # print(results['ids'])
-
+    search_term = input("Search Query: ")
+    results = db.query(query_texts=search_term)
+    for i in range(10):
+        print(results['ids'][0][i] + "\t")
+        print(results['documents'][0][i])
+        print(results['distances'][0][i])
 
