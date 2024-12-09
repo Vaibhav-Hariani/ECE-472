@@ -33,7 +33,7 @@ if __name__ == "__main__":
     SEQ_LEN = 2048
     
 
-    persist_directory = "db"
+    persist_directory = "/data_out/Proj_8/db"
 
     dataset = load_dataset("hazyresearch/LoCoV1-Documents")["test"]
     chroma_client = chromadb.PersistentClient(path=persist_directory)
@@ -44,14 +44,15 @@ if __name__ == "__main__":
     db = chroma_client.create_collection(
         name="search_corpus", get_or_create=True, embedding_function=Embedder)
 
-    print("Embedding document now")
     if(db.count() < EXPECTED_LEN):
+        print("Embedding documents now")
+        print("Need to embed %d" % (EXPECTED_LEN - db.count()))
         batch_size = 1
         for i in range(db.count(),EXPECTED_LEN,batch_size):
             batch = dataset[i:i+batch_size]
             db.add(ids=batch['pid'],documents=batch['passage'])
             if i %5 == 0:
-                print("Embedding document %d" % (i))
+                print("Embedding document %d", i)
 
     else:
         print("Database Already Loaded")
