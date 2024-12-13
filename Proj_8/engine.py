@@ -43,7 +43,7 @@ if __name__ == "__main__":
         name="search_corpus",
         get_or_create=True,
         embedding_function=Embedder,
-        metadata={"hnsw:space": "cosine"},
+        # metadata={"hnsw:space": "cosine"},
     )
 
     if db.count() == 0:
