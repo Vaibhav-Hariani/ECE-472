@@ -27,13 +27,12 @@ class Embed(chromadb.EmbeddingFunction):
         return embeddings
 
 
-
 if __name__ == "__main__":
     from datasets import load_dataset
     from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
     SEQ_LEN = 2048
-    
+    INFER = True
 
     persist_directory = "db"
 
@@ -41,40 +40,40 @@ if __name__ == "__main__":
 
     Embedder = Embed()
     db = chroma_client.create_collection(
-        name="search_corpus", get_or_create=True, embedding_function=Embedder)
+        name="search_corpus",
+        get_or_create=True,
+        embedding_function=Embedder,
+        metadata={"hnsw:space": "cosine"},
+    )
 
-    if(db.count() == 0):
+    if db.count() == 0:
         print("Embedding documents now")
         dataset = load_dataset("hazyresearch/LoCoV1-Documents")["test"]
-        EXPECTED_LEN = dataset.shape[0]
+        EXPECTED_LEN = 100
 
         print("Need to embed %d" % (EXPECTED_LEN - db.count()))
         batch_size = 1
-        for i in range(db.count(),EXPECTED_LEN,batch_size):
-            batch = dataset[i:i+batch_size]
-            db.add(ids=batch['pid'],documents=batch['passage'])
-            if i %50 == 0:
+        for i in range(db.count(), EXPECTED_LEN, batch_size):
+            batch = dataset[i : i + batch_size]
+            db.add(ids=batch["pid"], documents=batch["passage"])
+            if i % 5 == 0:
                 print("Embedding document %d" % (i))
 
     else:
         print("Database Already Loaded")
-        print("Documents already embedded %d" % (db.count()))        
+        print("Documents already embedded %d" % (db.count()))
         ##Means the model hasn't been filled yet
 
-
-    print("Ready for Inference:")
-    search_term = "x"
-    f = open("chromadb_output.txt", "w")
-
-    while(search_term != "***EXIT***"):
+    if INFER:
+        print("Ready for Inference:")
         search_term = input("Search Query (***EXIT*** to quit): ")
-        embeddings = Embedder(search_term)
-        results = db.query(query_texts=search_term)
-        print(results['ids'][0])
-        for document in results['documents'][0]:
-            f.write(document)
-            f.write("\n \n \n")
-
-
-
-
+        f = open("chromadb_output.txt", "w")
+        while search_term != "***EXIT***":
+            embeddings = Embedder(search_term)
+            results = db.query(query_texts=search_term)
+            print(results["ids"][0])
+            print(results["distances"][0])
+            for document in results["documents"][0]:
+                f.write(document)
+                f.write("\n ***END OF DOCUMENT *** \n")
+            search_term = input("Search Query (***EXIT*** to quit): ")
