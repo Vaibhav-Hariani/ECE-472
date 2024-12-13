@@ -30,11 +30,12 @@ class Embed(chromadb.EmbeddingFunction):
 if __name__ == "__main__":
     from datasets import load_dataset
     from transformers import AutoTokenizer, AutoModelForSequenceClassification
+    from tqdm import trange
 
     SEQ_LEN = 2048
     INFER = False
 
-    persist_directory = "db"
+    persist_directory = "db_test"
 
     chroma_client = chromadb.PersistentClient(path=persist_directory)
 
@@ -49,15 +50,17 @@ if __name__ == "__main__":
     if db.count() == 0:
         print("Embedding documents now")
         dataset = load_dataset("hazyresearch/LoCoV1-Documents")["test"]
-        EXPECTED_LEN = 100
-
+        EXPECTED_LEN = dataset.shape[0]
         print("Need to embed %d" % (EXPECTED_LEN - db.count()))
         batch_size = 1
-        for i in range(db.count(), EXPECTED_LEN, batch_size):
+        bar = trange(EXPECTED_LEN)
+        for i in bar:
             batch = dataset[i : i + batch_size]
+            
             db.add(ids=batch["pid"], documents=batch["passage"])
             if i % 5 == 0:
-                print("Embedding document %d" % (i))
+                # print("Embedding document %d" % (i))
+                bar.refresh()
 
     else:
         print("Database Already Loaded")
