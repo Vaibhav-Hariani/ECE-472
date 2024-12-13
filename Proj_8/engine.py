@@ -23,7 +23,13 @@ class Embed(chromadb.EmbeddingFunction):
         )
         outputs = self.model(**input_ids)
         embeddings = outputs["sentence_embedding"].detach().cpu().numpy()
+        # print("embedded something")
         return embeddings
+    
+    def search_embedding(self):
+
+        return 
+
 
 
 if __name__ == "__main__":
@@ -33,34 +39,39 @@ if __name__ == "__main__":
     SEQ_LEN = 2048
     
 
-    persist_directory = "/data_out/Proj_8/db"
+    persist_directory = "db_new"
 
-    dataset = load_dataset("hazyresearch/LoCoV1-Documents")["test"]
     chroma_client = chromadb.PersistentClient(path=persist_directory)
-
-    EXPECTED_LEN = dataset.shape[0]
 
     Embedder = Embed()
     db = chroma_client.create_collection(
         name="search_corpus", get_or_create=True, embedding_function=Embedder)
 
-    if(db.count() < EXPECTED_LEN):
+    if(db.count() == 0):
         print("Embedding documents now")
+        dataset = load_dataset("hazyresearch/LoCoV1-Documents")["test"]
+        EXPECTED_LEN = dataset.shape[0]
+
         print("Need to embed %d" % (EXPECTED_LEN - db.count()))
         batch_size = 1
         for i in range(db.count(),EXPECTED_LEN,batch_size):
             batch = dataset[i:i+batch_size]
             db.add(ids=batch['pid'],documents=batch['passage'])
-            if i %5 == 0:
-                print("Embedding document %d", i)
+            if i %50 == 0:
+                print("Embedding document %d" % (i))
 
     else:
         print("Database Already Loaded")
+        print("Documents already embedded %d" % (db.count()))        
         ##Means the model hasn't been filled yet
 
+
     print("Ready for Inference:")
-    # search_term = input("Search Query: ")
-    # results = db.query(query_texts=search_term)
-    # print(results['ids'])
+    search_term = "x"
+    while(search_term != "***EXIT***"):
+        search_term = input("Search Query (***EXIT*** to quit): ")
+        embeddings = Embedder(search_term)
+        results = db.query(query_texts=search_term)
+        print(results['ids'][0])
 
 
