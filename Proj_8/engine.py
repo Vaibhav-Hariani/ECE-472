@@ -39,9 +39,9 @@ if __name__ == "__main__":
     from tqdm import trange
 
     SEQ_LEN = 2048
-    INFER = False
+    INFER = True
 
-    persist_directory = "db"
+    persist_directory = "db_cos_retry"
 
     chroma_client = chromadb.PersistentClient(path=persist_directory)
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     if db.count() == 0:
         print("Embedding documents now")
         dataset = load_dataset("hazyresearch/LoCoV1-Documents")["test"]
-        EXPECTED_LEN = 100
+        EXPECTED_LEN = dataset.shape[0]
         print("Need to embed %d" % (EXPECTED_LEN - db.count()))
         bar = trange(EXPECTED_LEN)
         for i in bar:
@@ -64,7 +64,7 @@ if __name__ == "__main__":
             ##Document name insertion to improve relevant document searching, especially for wikimedia pages & the like
             ##Should be most effective for scripts and other documents that have implicit structure
             document = "Document Type: " + batch["dataset"] + "\n" +batch["passage"]           
-            db.add(ids=batch["pid"], documents=batch["passage"])
+            db.add(ids=batch["pid"], documents=document)
             if i % 5 == 0:
                 # print("Embedding document %d" % (i))
                 bar.refresh()
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             embeddings = Embedder(search_term)
             results = db.query(query_embeddings=embeddings,n_results=10)
             print(results["ids"][0])
-            threshold = results["distances"][0][0] * 5/4
+            threshold = (results["distances"][0][0] * 3)/2
             print(results["distances"][0])
             ##Trim irrelevant documents by only searching within k of the query: should improve 
             # precision at the expense of recall for documents with high relation
