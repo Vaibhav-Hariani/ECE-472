@@ -25,10 +25,6 @@ class Embed(chromadb.EmbeddingFunction):
         embeddings = outputs["sentence_embedding"].detach().cpu().numpy()
         # print("embedded something")
         return embeddings
-    
-    def search_embedding(self):
-
-        return 
 
 
 
@@ -39,7 +35,7 @@ if __name__ == "__main__":
     SEQ_LEN = 2048
     
 
-    persist_directory = "db_new"
+    persist_directory = "db"
 
     chroma_client = chromadb.PersistentClient(path=persist_directory)
 
@@ -68,10 +64,17 @@ if __name__ == "__main__":
 
     print("Ready for Inference:")
     search_term = "x"
+    f = open("chromadb_output.txt", "w")
+
     while(search_term != "***EXIT***"):
         search_term = input("Search Query (***EXIT*** to quit): ")
         embeddings = Embedder(search_term)
         results = db.query(query_texts=search_term)
         print(results['ids'][0])
+        for document in results['documents'][0]:
+            f.write(document)
+            f.write("\n \n \n")
+
+
 
 
