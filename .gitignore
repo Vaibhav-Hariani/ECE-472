@@ -9,4 +9,4 @@ CIFAR
 */*/[0-9]*/
 *.png
 *.jpg
-db
+db*
