@@ -32,7 +32,7 @@ if __name__ == "__main__":
     from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
     SEQ_LEN = 2048
-    INFER = True
+    INFER = False
 
     persist_directory = "db"
 
